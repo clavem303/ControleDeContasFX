@@ -14,10 +14,10 @@ abstract class Conta {
         this.descricao = descricao;
         this.valorBase = valorBase;
         this.dataVencimento = dataVencimento;
-        this.pago = pago;
+        this.pago = false;
     }
 
-    public abstract double calcularValorTotal();
+    public abstract BigDecimal calcularValorTotal();
 
     public void marcarComoPaga() {
         this.pago = true;
