@@ -3,7 +3,7 @@ package tech.clavem303.model;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-abstract class Conta {
+public abstract class Conta {
 
     private String descricao;
     private BigDecimal valor;
