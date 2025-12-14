@@ -10,7 +10,11 @@ public class ContaFixa extends Conta{
     }
 
     @Override
-    public double calcularValorTotal() {
-        return 0;
+    public BigDecimal calcularValorTotal() {
+        return getValorBase();
+    }
+
+    public LocalDate calcularProximoVencimento() {
+        return getDataVencimento().plusMonths(1);
     }
 }
