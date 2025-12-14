@@ -6,21 +6,15 @@ import java.time.LocalDate;
 abstract class Conta {
 
     private String descricao;
-    private BigDecimal valorBase;
+    private BigDecimal valor;
     private LocalDate dataVencimento;
     private boolean pago;
 
-    public Conta(String descricao, BigDecimal valorBase, LocalDate dataVencimento, boolean pago) {
+    public Conta(String descricao, BigDecimal valor, LocalDate dataVencimento, boolean pago) {
         this.descricao = descricao;
-        this.valorBase = valorBase;
+        this.valor = valor;
         this.dataVencimento = dataVencimento;
-        this.pago = false;
-    }
-
-    public abstract BigDecimal calcularValorTotal();
-
-    public void marcarComoPaga() {
-        this.pago = true;
+        this.pago = pago;
     }
 
     public String getDescricao() {
@@ -31,11 +25,15 @@ abstract class Conta {
         return dataVencimento;
     }
 
-    public BigDecimal getValorBase() {
-        return valorBase;
+    public BigDecimal getValor() {
+        return valor;
     }
 
-    public boolean isPago() {
+    public boolean getPago() {
         return pago;
+    }
+
+    public void setPago(boolean pago) {
+        this.pago = pago;
     }
 }

@@ -10,19 +10,12 @@ public class ContaVariavel extends Conta{
 
     public ContaVariavel(
             String descricao,
-            BigDecimal valorBase,
             LocalDate dataVencimento,
-            boolean pago,
             BigDecimal quantidade,
             BigDecimal valorUnitario) {
-        super(descricao, valorBase, dataVencimento, pago);
+        super(descricao, quantidade.multiply(valorUnitario), dataVencimento, true);
         this.quantidade = quantidade;
         this.valorUnitario = valorUnitario;
     }
 
-    @Override
-    public BigDecimal calcularValorTotal() {
-        BigDecimal custoConsumo = quantidade.multiply(valorUnitario);
-        return getValorBase().add(custoConsumo);
-    }
 }
