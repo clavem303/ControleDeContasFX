@@ -142,7 +142,28 @@ public class ConsoleUI {
     }
 
     private void marcarContaComoPaga() {
-        // Lógica para pedir o índice e chamar gerenciador.marcarComoPaga()
-        System.out.println("Funcionalidade em desenvolvimento...");
+        System.out.println("\n--- ✅ BAIXA DE PAGAMENTO ---");
+        List<Conta> contas = gerenciador.listarTodasContas();
+        if (contas.isEmpty()) {
+            System.out.println("Não há contas cadastradas para marcar como pagas.");
+        }
+
+        try {
+            int indice = Integer.parseInt(scanner.nextLine());
+
+            // Chamamos o serviço para realizar a alteração lógica
+            boolean sucesso = gerenciador.marcarComoPaga(indice);
+
+            if (sucesso) {
+                System.out.println("✅ Pagamento registrado com sucesso para a conta: "
+                        + contas.get(indice).getDescricao());
+            } else {
+                System.out.println("❌ Erro: ID inválido. Verifique a lista de contas.");
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("❌ Erro: Por favor, digite um número inteiro válido.");
+        } catch (IndexOutOfBoundsException e) {
+            System.out.println("❌ Erro: Esse ID não existe na lista.");
+        }
     }
 }
