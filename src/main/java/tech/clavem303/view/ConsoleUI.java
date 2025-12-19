@@ -1,11 +1,15 @@
 package tech.clavem303.view;
 
+import tech.clavem303.factory.ContaFactory;
+import tech.clavem303.model.Conta;
 import tech.clavem303.service.GerenciadorDeContas;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Scanner;
 
-public class ConsoleUI
-{
+public class ConsoleUI {
     private final GerenciadorDeContas gerenciador;
     private final Scanner scanner;
 
@@ -68,18 +72,73 @@ public class ConsoleUI
     }
 
     private void adicionarConta() {
-        // Lógica de leitura de tipo e dados e chamada ao Factory
-        System.out.println("Funcionalidade em desenvolvimento...");
+        System.out.println("\n--- ➕ ADICIONAR NOVA CONTA ---");
+        System.out.print("Tipo da conta (FIXA ou VARIAVEL): ");
+        String tipo = scanner.nextLine().toUpperCase();
+
+        System.out.print("Descrição: ");
+        String descricao = scanner.nextLine();
+
+        System.out.print("Data de Vencimento (AAAA-MM-DD): ");
+        LocalDate data = LocalDate.parse(scanner.nextLine());
+
+        BigDecimal valor = BigDecimal.ZERO;
+        BigDecimal quantidade = null;
+        BigDecimal valorUnitario = null;
+
+        if (tipo.equals("FIXA")) {
+            System.out.print("Valor da conta: ");
+            valor = new BigDecimal(scanner.nextLine());
+        } else if (tipo.equals("VARIAVEL")) {
+            System.out.print("Quantidade (unidade/peso): ");
+            quantidade = new BigDecimal(scanner.nextLine());
+            System.out.print("Valor Unitário: ");
+            valorUnitario = new BigDecimal(scanner.nextLine());
+        } else {
+            System.out.println("❌ Tipo inválido!");
+            return;
+        }
+
+        try {
+            Conta novaConta = ContaFactory.criarConta(tipo, descricao, data, valor, quantidade, valorUnitario);
+            gerenciador.adicionarConta(novaConta);
+            System.out.println("✅ Conta adicionada com sucesso!");
+
+        } catch (Exception e) {
+            System.out.println("❌ Erro ao criar conta: " + e.getMessage());
+        }
     }
 
     private void listarContas() {
-        // Lógica para chamar gerenciador.listarTodasContas() e exibir
-        System.out.println("Funcionalidade em desenvolvimento...");
+        System.out.println("\n--- 📋 LISTA DE CONTAS ---");
+        List<Conta> contas = gerenciador.listarTodasContas();
+
+        if (contas.isEmpty()) {
+            System.out.println("Nenhuma conta cadastrada.");
+        }
+
+        System.out.printf("%-3s | %-20s | %-12s | %10s | %-8s%n", "ID", "Descrição", "Vencimento", "Valor", "Status");
+        System.out.println("------------------------------------------------------------------");
+
+        for (int i = 0; i < contas.size(); i++) {
+            Conta conta = contas.get(i);
+            String status = conta.getPago() ? "PAGO" : "PENDENTE";
+
+            System.out.printf("%-3d | %-20s | %-12s | %10.2f | %-8s%n",
+                    i,
+                    conta.getDescricao(),
+                    conta.getDataVencimento(),
+                    conta.getValor(),
+                    status);
+        }
     }
 
+
     private void exibirTotalAPagar() {
-        // Lógica para chamar gerenciador.calcularTotalAPagar() e exibir
-        System.out.println("Funcionalidade em desenvolvimento...");
+        BigDecimal total = gerenciador.calcularTotalAPagar();
+
+        System.out.println("\n--- 💰 RESUMO FINANCEIRO ---");
+        System.out.printf("Total pendente de pagamento: R$ %.2f%n", total);
     }
 
     private void marcarContaComoPaga() {
