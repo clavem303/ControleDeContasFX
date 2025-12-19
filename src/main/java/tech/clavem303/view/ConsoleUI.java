@@ -52,22 +52,12 @@ public class ConsoleUI {
 
     private void processarOpcao(int opcao) {
         switch (opcao) {
-            case 1:
-                adicionarConta();
-                break;
-            case 2:
-                listarContas();
-                break;
-            case 3:
-                exibirTotalAPagar();
-                break;
-            case 4:
-                marcarContaComoPaga();
-                break;
-            case 0:
-                break; // Sair
-            default:
-                System.out.println("Opção inválida. Tente novamente.");
+            case 1 -> adicionarConta();
+            case 2 -> listarContas();
+            case 3 -> exibirTotalAPagar();
+            case 4 -> marcarContaComoPaga();
+            case 0 -> System.out.println("Saindo...");
+            default -> System.out.println("Opção inválida. Tente novamente.");
         }
     }
 
