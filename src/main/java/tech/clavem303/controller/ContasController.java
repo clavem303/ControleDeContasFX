@@ -2,6 +2,7 @@ package tech.clavem303.controller;
 
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -13,6 +14,8 @@ import javafx.stage.Stage;
 import javafx.util.Callback;
 import org.kordamp.ikonli.javafx.FontIcon;
 import tech.clavem303.model.Conta;
+import tech.clavem303.model.ContaFixa;
+import tech.clavem303.model.ContaVariavel;
 import tech.clavem303.service.GerenciadorDeContas;
 
 import java.io.IOException;
@@ -21,135 +24,147 @@ import java.time.LocalDate;
 
 public class ContasController {
 
-    @FXML
-    private TableView<Conta> tabelaContas;
-    @FXML
-    private TableColumn<Conta, String> colDescricao;
-    @FXML
-    private TableColumn<Conta, LocalDate> colVencimento;
-    @FXML
-    private TableColumn<Conta, BigDecimal> colValor;
-    @FXML
-    private TableColumn<Conta, String> colStatus;
-    @FXML
-    private TableColumn<Conta, Void> colAcoes;
+    // --- Tabela FIXAS ---
+    @FXML private TableView<Conta> tabelaFixas;
+    @FXML private TableColumn<Conta, String> colDescricaoFixa;
+    @FXML private TableColumn<Conta, LocalDate> colVencimentoFixa;
+    @FXML private TableColumn<Conta, BigDecimal> colValorFixa;
+    @FXML private TableColumn<Conta, String> colStatusFixa;
+    @FXML private TableColumn<Conta, Void> colAcoesFixa;
+
+    // --- Tabela VARIÁVEIS ---
+    @FXML private TableView<Conta> tabelaVariaveis;
+    @FXML private TableColumn<Conta, String> colDescricaoVar;
+    @FXML private TableColumn<Conta, BigDecimal> colQtdVar;       // Específico
+    @FXML private TableColumn<Conta, BigDecimal> colUnitarioVar;  // Específico
+    @FXML private TableColumn<Conta, LocalDate> colVencimentoVar;
+    @FXML private TableColumn<Conta, BigDecimal> colValorVar;
+    @FXML private TableColumn<Conta, String> colStatusVar;
+    @FXML private TableColumn<Conta, Void> colAcoesVar;
 
     private GerenciadorDeContas service;
 
-    /**
-     * Chamado pelo MainController para injetar a dependência do serviço
-     */
     public void setService(GerenciadorDeContas service) {
         this.service = service;
-        // Vincula a tabela à lista observável do serviço
-        tabelaContas.setItems(service.getContas());
+
+        // 1. Cria lista filtrada apenas para FIXAS
+        FilteredList<Conta> listaFixas = new FilteredList<>(service.getContas(), conta -> conta instanceof ContaFixa);
+        tabelaFixas.setItems(listaFixas);
+
+        // 2. Cria lista filtrada apenas para VARIÁVEIS
+        FilteredList<Conta> listaVariaveis = new FilteredList<>(service.getContas(), conta -> conta instanceof ContaVariavel);
+        tabelaVariaveis.setItems(listaVariaveis);
     }
 
     @FXML
     public void initialize() {
-        configurarColunas();
+        configurarTabelaFixa();
+        configurarTabelaVariavel();
     }
 
-    private void configurarColunas() {
-        // Como 'Conta' é um Record/Interface, usamos lambdas para pegar os valores
-        colDescricao.setCellValueFactory(data ->
-                new SimpleStringProperty(data.getValue().descricao()));
+    private void configurarTabelaFixa() {
+        colDescricaoFixa.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().descricao()));
+        colVencimentoFixa.setCellValueFactory(d -> new SimpleObjectProperty<>(d.getValue().dataVencimento()));
+        colValorFixa.setCellValueFactory(d -> new SimpleObjectProperty<>(d.getValue().valor()));
 
-        colVencimento.setCellValueFactory(data ->
-                new SimpleObjectProperty<>(data.getValue().dataVencimento()));
-
-        colValor.setCellValueFactory(data ->
-                new SimpleObjectProperty<>(data.getValue().valor()));
-
-        // Formatação condicional para o Status
-        colStatus.setCellValueFactory(data -> {
-            boolean pago = data.getValue().pago();
+        colStatusFixa.setCellValueFactory(d -> {
+            boolean pago = d.getValue().pago();
             return new SimpleStringProperty(pago ? "PAGO" : "PENDENTE");
         });
 
-        colAcoes.setCellFactory(new Callback<>() {
-            @Override
-            public TableCell<Conta, Void> call(final TableColumn<Conta, Void> param) {
-                return new TableCell<>() {
-                    // Os botões que vão aparecer na célula
-                    private final Button btnPagar = new Button();
-                    private final Button btnExcluir = new Button();
-                    private final HBox container = new HBox(10, btnPagar, btnExcluir);
+        // Configura os botões usando o método reutilizável
+        criarBotaoAcoes(colAcoesFixa, tabelaFixas);
+    }
 
-                    {
-                        // Configuração visual dos botões (ícones)
-                        btnPagar.setGraphic(new FontIcon("fas-check"));
-                        btnPagar.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-cursor: hand;");
-                        btnPagar.setTooltip(new Tooltip("Marcar como Paga"));
+    private void configurarTabelaVariavel() {
+        colDescricaoVar.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().descricao()));
+        colVencimentoVar.setCellValueFactory(d -> new SimpleObjectProperty<>(d.getValue().dataVencimento()));
+        colValorVar.setCellValueFactory(d -> new SimpleObjectProperty<>(d.getValue().valor()));
 
-                        btnExcluir.setGraphic(new FontIcon("fas-trash"));
-                        btnExcluir.setStyle("-fx-background-color: #F44336; -fx-text-fill: white; -fx-cursor: hand;");
-                        btnExcluir.setTooltip(new Tooltip("Excluir Conta"));
-
-                        // Ação de Pagar
-                        btnPagar.setOnAction(event -> {
-                            Conta conta = getTableView().getItems().get(getIndex());
-                            service.marcarComoPaga(conta);
-                            tabelaContas.refresh(); // Força atualização visual da linha
-                        });
-
-                        // Ação de Excluir
-                        btnExcluir.setOnAction(event -> {
-                            Conta conta = getTableView().getItems().get(getIndex());
-                            // Confirmação simples
-                            Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Tem certeza que deseja excluir " + conta.descricao() + "?");
-                            alert.showAndWait().ifPresent(response -> {
-                                if (response == ButtonType.OK) {
-                                    service.removerConta(conta);
-                                }
-                            });
-                        });
-
-                        container.setAlignment(javafx.geometry.Pos.CENTER);
-                    }
-
-                    @Override
-                    public void updateItem(Void item, boolean empty) {
-                        super.updateItem(item, empty);
-                        if (empty) {
-                            setGraphic(null);
-                        } else {
-                            // Só mostra o botão de pagar se a conta NÃO estiver paga
-                            Conta contaAtual = getTableView().getItems().get(getIndex());
-                            btnPagar.setDisable(contaAtual.pago());
-
-                            setGraphic(container);
-                        }
-                    }
-                };
+        // Colunas específicas de Variável (Precisamos fazer o Cast)
+        colQtdVar.setCellValueFactory(d -> {
+            if (d.getValue() instanceof ContaVariavel cv) { // Pattern Matching do Java moderno
+                return new SimpleObjectProperty<>(cv.quantidade());
             }
+            return null;
         });
 
-        // DICA: Aqui você poderia adicionar CellFactory para colorir o texto (Verde/Vermelho)
+        colUnitarioVar.setCellValueFactory(d -> {
+            if (d.getValue() instanceof ContaVariavel cv) {
+                return new SimpleObjectProperty<>(cv.valorUnitario());
+            }
+            return null;
+        });
+
+        colStatusVar.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().pago() ? "PAGO" : "PENDENTE"));
+
+        // Configura os botões
+        criarBotaoAcoes(colAcoesVar, tabelaVariaveis);
+    }
+
+    // Método genérico para criar botões em qualquer tabela
+    private void criarBotaoAcoes(TableColumn<Conta, Void> coluna, TableView<Conta> tabelaOrigem) {
+        coluna.setCellFactory(param -> new TableCell<>() {
+            private final Button btnPagar = new Button();
+            private final Button btnExcluir = new Button();
+            private final HBox container = new HBox(10, btnPagar, btnExcluir);
+
+            {
+                btnPagar.setGraphic(new FontIcon("fas-check"));
+                btnPagar.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white;");
+                btnPagar.setTooltip(new Tooltip("Marcar como Paga"));
+
+                btnExcluir.setGraphic(new FontIcon("fas-trash"));
+                btnExcluir.setStyle("-fx-background-color: #F44336; -fx-text-fill: white;");
+                btnExcluir.setTooltip(new Tooltip("Excluir Conta"));
+
+                container.setAlignment(javafx.geometry.Pos.CENTER);
+
+                btnPagar.setOnAction(event -> {
+                    Conta conta = getTableView().getItems().get(getIndex());
+                    service.marcarComoPaga(conta);
+                    // O FilteredList atualiza a View, mas forçamos refresh para garantir cores
+                    tabelaOrigem.refresh();
+                });
+
+                btnExcluir.setOnAction(event -> {
+                    Conta conta = getTableView().getItems().get(getIndex());
+                    Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Excluir " + conta.descricao() + "?");
+                    alert.showAndWait().ifPresent(r -> {
+                        if (r == ButtonType.OK) service.removerConta(conta);
+                    });
+                });
+            }
+
+            @Override
+            protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) {
+                    setGraphic(null);
+                } else {
+                    Conta conta = getTableView().getItems().get(getIndex());
+                    btnPagar.setDisable(conta.pago());
+                    setGraphic(container);
+                }
+            }
+        });
     }
 
     @FXML
     private void btnNovaContaAction() {
         try {
-            // Carrega o formulário
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/tech/clavem303/view/FormularioConta.fxml"));
             Parent page = loader.load();
-
-            // Cria o Palco (Stage) da janela flutuante
             Stage dialogStage = new Stage();
             dialogStage.setTitle("Nova Conta");
-            dialogStage.initModality(Modality.WINDOW_MODAL); // Impede clicar na janela de trás
-            dialogStage.initOwner(tabelaContas.getScene().getWindow());
+            dialogStage.initModality(Modality.WINDOW_MODAL);
+            dialogStage.initOwner(tabelaFixas.getScene().getWindow()); // Pega a janela atual
+            dialogStage.setScene(new Scene(page));
 
-            Scene scene = new Scene(page);
-            dialogStage.setScene(scene);
-
-            // Passa as dependências para o controller do formulário
             FormularioContaController controller = loader.getController();
             controller.setDialogStage(dialogStage);
-            controller.setService(this.service); // Passamos o MESMO service para ele adicionar na lista certa
+            controller.setService(this.service);
 
-            // Mostra e espera fechar
             dialogStage.showAndWait();
 
         } catch (IOException e) {

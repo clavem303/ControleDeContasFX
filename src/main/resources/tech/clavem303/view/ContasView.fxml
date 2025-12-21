@@ -1,12 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.Button?>
-<?import javafx.scene.control.Label?>
-<?import javafx.scene.control.TableColumn?>
-<?import javafx.scene.control.TableView?>
-<?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
 
 <VBox spacing="20" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
@@ -19,9 +15,7 @@
 
     <HBox alignment="CENTER_LEFT" spacing="20">
         <Label text="Minhas Contas" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
-
         <HBox HBox.hgrow="ALWAYS" />
-
         <Button text="Nova Conta" styleClass="action-button" onAction="#btnNovaContaAction">
             <graphic>
                 <FontIcon iconLiteral="fas-plus" iconColor="WHITE"/>
@@ -29,17 +23,44 @@
         </Button>
     </HBox>
 
-    <TableView fx:id="tabelaContas" VBox.vgrow="ALWAYS">
-        <columns>
-            <TableColumn fx:id="colDescricao" text="Descrição" prefWidth="250"/>
-            <TableColumn fx:id="colVencimento" text="Vencimento" prefWidth="120"/>
-            <TableColumn fx:id="colValor" text="Valor (R$)" prefWidth="120"/>
-            <TableColumn fx:id="colStatus" text="Status" prefWidth="100"/>
-            <TableColumn fx:id="colAcoes" text="Ações" prefWidth="100" style="-fx-alignment: CENTER;"/>
-        </columns>
-        <placeholder>
-            <Label text="Nenhuma conta cadastrada."/>
-        </placeholder>
-    </TableView>
+    <TabPane tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
+
+        <Tab text="Contas Fixas">
+            <content>
+                <TableView fx:id="tabelaFixas" styleClass="table-view">
+                    <columns>
+                        <TableColumn fx:id="colDescricaoFixa" text="Descrição" prefWidth="250"/>
+                        <TableColumn fx:id="colVencimentoFixa" text="Vencimento" prefWidth="120"/>
+                        <TableColumn fx:id="colValorFixa" text="Valor (R$)" prefWidth="120"/>
+                        <TableColumn fx:id="colStatusFixa" text="Status" prefWidth="100"/>
+                        <TableColumn fx:id="colAcoesFixa" text="Ações" prefWidth="100"/>
+                    </columns>
+                    <placeholder>
+                        <Label text="Nenhuma conta fixa cadastrada."/>
+                    </placeholder>
+                </TableView>
+            </content>
+        </Tab>
+
+        <Tab text="Contas Variáveis">
+            <content>
+                <TableView fx:id="tabelaVariaveis" styleClass="table-view">
+                    <columns>
+                        <TableColumn fx:id="colDescricaoVar" text="Descrição" prefWidth="200"/>
+                        <TableColumn fx:id="colQtdVar" text="Qtd" prefWidth="60"/>
+                        <TableColumn fx:id="colUnitarioVar" text="V. Unit." prefWidth="80"/>
+                        <TableColumn fx:id="colVencimentoVar" text="Data Compra" prefWidth="110"/>
+                        <TableColumn fx:id="colValorVar" text="Total (R$)" prefWidth="100"/>
+                        <TableColumn fx:id="colStatusVar" text="Status" prefWidth="100"/>
+                        <TableColumn fx:id="colAcoesVar" text="Ações" prefWidth="100"/>
+                    </columns>
+                    <placeholder>
+                        <Label text="Nenhuma despesa variável."/>
+                    </placeholder>
+                </TableView>
+            </content>
+        </Tab>
+
+    </TabPane>
 
 </VBox>
