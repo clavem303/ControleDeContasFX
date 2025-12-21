@@ -3,19 +3,30 @@ package tech.clavem303.model;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-public class ContaVariavel extends Conta{
+public record ContaVariavel(
+        String descricao,
+        BigDecimal valor, // Este será o resultado de quantidade * valorUnitario
+        LocalDate dataVencimento,
+        boolean pago,
+        BigDecimal quantidade,
+        BigDecimal valorUnitario
+) implements Conta {
 
-    private final BigDecimal quantidade;
-    private final BigDecimal valorUnitario;
-
-    public ContaVariavel(
-            String descricao,
-            LocalDate dataVencimento,
-            BigDecimal quantidade,
-            BigDecimal valorUnitario) {
-        super(descricao, quantidade.multiply(valorUnitario), dataVencimento, true);
-        this.quantidade = quantidade;
-        this.valorUnitario = valorUnitario;
+    // Construtor Compacto: centraliza a lógica de cálculo e status inicial
+    public ContaVariavel(String descricao, LocalDate dataVencimento, BigDecimal quantidade, BigDecimal valorUnitario) {
+        this(
+                descricao,
+                quantidade.multiply(valorUnitario), // Calcula o valor total automaticamente
+                dataVencimento,
+                true, // Contas variáveis (compras diárias) entram como pagas
+                quantidade,
+                valorUnitario
+        );
     }
 
+    @Override
+    public Conta comStatusPago(boolean novoStatus) {
+        // Como Records são imutáveis, retornamos uma nova instância com o novo status
+        return new ContaVariavel(descricao, valor, dataVencimento, novoStatus, quantidade, valorUnitario);
+    }
 }

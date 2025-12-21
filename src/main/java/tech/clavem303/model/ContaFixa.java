@@ -3,13 +3,11 @@ package tech.clavem303.model;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-public class ContaFixa extends Conta {
-
+public record ContaFixa(String descricao, BigDecimal valor, LocalDate dataVencimento, boolean pago) implements Conta {
     public ContaFixa(String descricao, BigDecimal valor, LocalDate dataVencimento) {
-        super(descricao, valor, dataVencimento, false);
+        this(descricao, valor, dataVencimento, false);
     }
-
-    public LocalDate calcularProximoVencimento() {
-        return getDataVencimento().plusMonths(1);
+    @Override public Conta comStatusPago(boolean novoStatus) {
+        return new ContaFixa(descricao, valor, dataVencimento, novoStatus);
     }
 }

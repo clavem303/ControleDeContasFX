@@ -90,6 +90,7 @@ public class ConsoleUI {
         }
 
         try {
+            // A Factory agora retorna um Record imutável
             Conta novaConta = ContaFactory.criarConta(tipo, descricao, data, valor, quantidade, valorUnitario);
             gerenciador.adicionarConta(novaConta);
             System.out.println("✅ Conta adicionada com sucesso!");
@@ -105,6 +106,7 @@ public class ConsoleUI {
 
         if (contas.isEmpty()) {
             System.out.println("Nenhuma conta cadastrada.");
+            return;
         }
 
         System.out.printf("%-3s | %-20s | %-12s | %10s | %-8s%n", "ID", "Descrição", "Vencimento", "Valor", "Status");
@@ -112,21 +114,20 @@ public class ConsoleUI {
 
         for (int i = 0; i < contas.size(); i++) {
             Conta conta = contas.get(i);
-            String status = conta.getPago() ? "PAGO" : "PENDENTE";
+            // Em Records, os métodos de acesso não usam o prefixo 'get'
+            String status = conta.pago() ? "PAGO" : "PENDENTE";
 
             System.out.printf("%-3d | %-20s | %-12s | %10.2f | %-8s%n",
                     i,
-                    conta.getDescricao(),
-                    conta.getDataVencimento(),
-                    conta.getValor(),
+                    conta.descricao(),      // Acesso via Record
+                    conta.dataVencimento(), // Acesso via Record
+                    conta.valor(),          // Acesso via Record
                     status);
         }
     }
 
-
     private void exibirTotalAPagar() {
         BigDecimal total = gerenciador.calcularTotalAPagar();
-
         System.out.println("\n--- 💰 RESUMO FINANCEIRO ---");
         System.out.printf("Total pendente de pagamento: R$ %.2f%n", total);
     }
@@ -134,26 +135,29 @@ public class ConsoleUI {
     private void marcarContaComoPaga() {
         System.out.println("\n--- ✅ BAIXA DE PAGAMENTO ---");
         List<Conta> contas = gerenciador.listarTodasContas();
+
         if (contas.isEmpty()) {
             System.out.println("Não há contas cadastradas para marcar como pagas.");
+            return;
         }
 
+        System.out.print("Digite o ID (índice) da conta: ");
         try {
             int indice = Integer.parseInt(scanner.nextLine());
 
-            // Chamamos o serviço para realizar a alteração lógica
+            // O gerenciador agora substitui o Record na lista para simular a alteração
             boolean sucesso = gerenciador.marcarComoPaga(indice);
 
             if (sucesso) {
-                System.out.println("✅ Pagamento registrado com sucesso para a conta: "
-                        + contas.get(indice).getDescricao());
+                System.out.println("✅ Pagamento registrado com sucesso para: "
+                        + contas.get(indice).descricao());
             } else {
-                System.out.println("❌ Erro: ID inválido. Verifique a lista de contas.");
+                System.out.println("❌ Erro: ID inválido.");
             }
         } catch (NumberFormatException e) {
-            System.out.println("❌ Erro: Por favor, digite um número inteiro válido.");
+            System.out.println("❌ Erro: Digite um número inteiro.");
         } catch (IndexOutOfBoundsException e) {
-            System.out.println("❌ Erro: Esse ID não existe na lista.");
+            System.out.println("❌ Erro: ID inexistente.");
         }
     }
 }
