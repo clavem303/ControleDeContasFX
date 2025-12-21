@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Text?>
+
+<VBox spacing="15" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="tech.clavem303.controller.FormularioContaController"
+      style="-fx-background-color: white; -fx-padding: 20;">
+
+    <Text text="Nova Conta" style="-fx-font-size: 20px; -fx-font-weight: bold;"/>
+
+    <GridPane vgap="10" hgap="10">
+        <Label text="Tipo:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+        <ComboBox fx:id="comboTipo" prefWidth="200" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+        <Label text="Descrição:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+        <TextField fx:id="txtDescricao" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+        <Label text="Vencimento:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+        <DatePicker fx:id="dateVencimento" prefWidth="200" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+    </GridPane>
+
+    <Separator/>
+
+    <StackPane>
+        <VBox fx:id="areaFixa" spacing="10" visible="false">
+            <Label text="Valor Total (R$):"/>
+            <TextField fx:id="txtValorFixo"/>
+        </VBox>
+
+        <GridPane fx:id="areaVariavel" vgap="10" hgap="10" visible="false">
+            <Label text="Quantidade:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+            <TextField fx:id="txtQuantidade" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+            <Label text="Valor Unitário:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+            <TextField fx:id="txtValorUnitario" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+        </GridPane>
+    </StackPane>
+
+    <HBox spacing="10" alignment="CENTER_RIGHT">
+        <Button text="Cancelar" onAction="#cancelar" style="-fx-background-color: #ccc;"/>
+        <Button text="Salvar" onAction="#salvar" styleClass="action-button"/>
+    </HBox>
+
+</VBox>

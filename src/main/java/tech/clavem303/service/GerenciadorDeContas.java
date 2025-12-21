@@ -1,18 +1,18 @@
 package tech.clavem303.service;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import tech.clavem303.model.Conta;
+
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 public class GerenciadorDeContas {
 
-    // Mantemos a lista mutável internamente para permitir a substituição de Records
-    private final List<Conta> contas;
+    // ObservableList notifica a UI automaticamente quando há mudanças
+    private final ObservableList<Conta> contas;
 
     public GerenciadorDeContas() {
-        this.contas = new ArrayList<>();
+        this.contas = FXCollections.observableArrayList();
     }
 
     public void adicionarConta(Conta conta) {
@@ -21,39 +21,28 @@ public class GerenciadorDeContas {
         }
     }
 
-    public List<Conta> listarTodasContas() {
-        // Retorna uma visão imutável para segurança da API
-        return Collections.unmodifiableList(this.contas);
+    // Agora retornamos a lista observável direta
+    public ObservableList<Conta> getContas() {
+        return this.contas;
     }
 
     public BigDecimal calcularTotalAPagar() {
-        BigDecimal total = BigDecimal.ZERO;
-
-        for (Conta conta : this.contas) {
-            // Em Records, acessamos como métodos: .pago() em vez de .getPago()
-            if (!conta.pago()) {
-                total = total.add(conta.valor());
-            }
-        }
-
-        return total;
+        return contas.stream()
+                .filter(c -> !c.pago())
+                .map(Conta::valor)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    /**
-     * Como Records são imutáveis, para "marcar como paga",
-     * substituímos a instância na lista.
-     */
-    public boolean marcarComoPaga(int indice) {
-        if (indice >= 0 && indice < contas.size()) {
-            Conta contaOriginal = contas.get(indice);
-
-            // Criamos uma nova versão usando o método 'wither' que definimos no Record
-            Conta contaAtualizada = contaOriginal.comStatusPago(true);
-
-            // Substituímos na lista
-            this.contas.set(indice, contaAtualizada);
-            return true;
+    public void marcarComoPaga(Conta contaParaPagar) {
+        int index = contas.indexOf(contaParaPagar);
+        if (index >= 0) {
+            // Substitui o Record antigo pelo novo com status pago
+            Conta contaAtualizada = contaParaPagar.comStatusPago(true);
+            contas.set(index, contaAtualizada);
         }
-        return false;
+    }
+
+    public void removerConta(Conta conta) {
+        this.contas.remove(conta);
     }
 }

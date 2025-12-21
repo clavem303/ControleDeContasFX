@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
+
+<VBox spacing="20" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="tech.clavem303.controller.ContasController"
+      styleClass="content-area">
+
+    <padding>
+        <Insets top="20" right="20" bottom="20" left="20"/>
+    </padding>
+
+    <HBox alignment="CENTER_LEFT" spacing="20">
+        <Label text="Minhas Contas" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
+
+        <HBox HBox.hgrow="ALWAYS" />
+
+        <Button text="Nova Conta" styleClass="action-button" onAction="#btnNovaContaAction">
+            <graphic>
+                <FontIcon iconLiteral="fas-plus" iconColor="WHITE"/>
+            </graphic>
+        </Button>
+    </HBox>
+
+    <TableView fx:id="tabelaContas" VBox.vgrow="ALWAYS">
+        <columns>
+            <TableColumn fx:id="colDescricao" text="Descrição" prefWidth="250"/>
+            <TableColumn fx:id="colVencimento" text="Vencimento" prefWidth="120"/>
+            <TableColumn fx:id="colValor" text="Valor (R$)" prefWidth="120"/>
+            <TableColumn fx:id="colStatus" text="Status" prefWidth="100"/>
+            <TableColumn fx:id="colAcoes" text="Ações" prefWidth="100" style="-fx-alignment: CENTER;"/>
+        </columns>
+        <placeholder>
+            <Label text="Nenhuma conta cadastrada."/>
+        </placeholder>
+    </TableView>
+
+</VBox>
