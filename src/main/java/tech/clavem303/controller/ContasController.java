@@ -20,27 +20,43 @@ import tech.clavem303.service.GerenciadorDeContas;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.text.NumberFormat;
 import java.time.LocalDate;
+import java.util.Locale;
 
 public class ContasController {
 
     // --- Tabela FIXAS ---
-    @FXML private TableView<Conta> tabelaFixas;
-    @FXML private TableColumn<Conta, String> colDescricaoFixa;
-    @FXML private TableColumn<Conta, LocalDate> colVencimentoFixa;
-    @FXML private TableColumn<Conta, BigDecimal> colValorFixa;
-    @FXML private TableColumn<Conta, String> colStatusFixa;
-    @FXML private TableColumn<Conta, Void> colAcoesFixa;
+    @FXML
+    private TableView<Conta> tabelaFixas;
+    @FXML
+    private TableColumn<Conta, String> colDescricaoFixa;
+    @FXML
+    private TableColumn<Conta, LocalDate> colVencimentoFixa;
+    @FXML
+    private TableColumn<Conta, BigDecimal> colValorFixa;
+    @FXML
+    private TableColumn<Conta, String> colStatusFixa;
+    @FXML
+    private TableColumn<Conta, Void> colAcoesFixa;
 
     // --- Tabela VARIÁVEIS ---
-    @FXML private TableView<Conta> tabelaVariaveis;
-    @FXML private TableColumn<Conta, String> colDescricaoVar;
-    @FXML private TableColumn<Conta, BigDecimal> colQtdVar;       // Específico
-    @FXML private TableColumn<Conta, BigDecimal> colUnitarioVar;  // Específico
-    @FXML private TableColumn<Conta, LocalDate> colVencimentoVar;
-    @FXML private TableColumn<Conta, BigDecimal> colValorVar;
-    @FXML private TableColumn<Conta, String> colStatusVar;
-    @FXML private TableColumn<Conta, Void> colAcoesVar;
+    @FXML
+    private TableView<Conta> tabelaVariaveis;
+    @FXML
+    private TableColumn<Conta, String> colDescricaoVar;
+    @FXML
+    private TableColumn<Conta, BigDecimal> colQtdVar;       // Específico
+    @FXML
+    private TableColumn<Conta, BigDecimal> colUnitarioVar;  // Específico
+    @FXML
+    private TableColumn<Conta, LocalDate> colVencimentoVar;
+    @FXML
+    private TableColumn<Conta, BigDecimal> colValorVar;
+    @FXML
+    private TableColumn<Conta, String> colStatusVar;
+    @FXML
+    private TableColumn<Conta, Void> colAcoesVar;
 
     private GerenciadorDeContas service;
 
@@ -60,30 +76,58 @@ public class ContasController {
     public void initialize() {
         configurarTabelaFixa();
         configurarTabelaVariavel();
+
+        // NOVO: Configura o clique duplo
+        configurarEdicao(tabelaFixas);
+        configurarEdicao(tabelaVariaveis);
     }
 
+    // Substitua o méto-do configurarTabelaFixa por este:
     private void configurarTabelaFixa() {
+        // 1. DADOS (O Que Mostrar)
         colDescricaoFixa.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().descricao()));
         colVencimentoFixa.setCellValueFactory(d -> new SimpleObjectProperty<>(d.getValue().dataVencimento()));
         colValorFixa.setCellValueFactory(d -> new SimpleObjectProperty<>(d.getValue().valor()));
 
+        // Lógica do Status (Se está pago ou pendente)
         colStatusFixa.setCellValueFactory(d -> {
             boolean pago = d.getValue().pago();
             return new SimpleStringProperty(pago ? "PAGO" : "PENDENTE");
         });
 
-        // Configura os botões usando o método reutilizável
+        // 2. FORMATAÇÃO (Como Mostrar - R$)
+        NumberFormat formatoMoeda = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
+
+        colValorFixa.setCellFactory(tc -> new TableCell<>() {
+            @Override
+            protected void updateItem(BigDecimal valor, boolean empty) {
+                super.updateItem(valor, empty);
+                if (empty || valor == null) {
+                    setText(null);
+                } else {
+                    setText(formatoMoeda.format(valor));
+                }
+            }
+        });
+
+        // 3. AÇÕES
         criarBotaoAcoes(colAcoesFixa, tabelaFixas);
     }
 
+    // Substitua o méto-do configurarTabelaVariavel por este:
     private void configurarTabelaVariavel() {
+        // 1. DADOS GERAIS (Interface Conta)
         colDescricaoVar.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().descricao()));
         colVencimentoVar.setCellValueFactory(d -> new SimpleObjectProperty<>(d.getValue().dataVencimento()));
-        colValorVar.setCellValueFactory(d -> new SimpleObjectProperty<>(d.getValue().valor()));
+        colValorVar.setCellValueFactory(d -> new SimpleObjectProperty<>(d.getValue().valor())); // O Total
 
-        // Colunas específicas de Variável (Precisamos fazer o Cast)
+        colStatusVar.setCellValueFactory(d ->
+                new SimpleStringProperty(d.getValue().pago() ? "PAGO" : "PENDENTE")
+        );
+
+        // 2. DADOS ESPECÍFICOS (ContaVariavel) - Aqui estava o problema principal
         colQtdVar.setCellValueFactory(d -> {
-            if (d.getValue() instanceof ContaVariavel cv) { // Pattern Matching do Java moderno
+            if (d.getValue() instanceof ContaVariavel cv) {
                 return new SimpleObjectProperty<>(cv.quantidade());
             }
             return null;
@@ -96,13 +140,91 @@ public class ContasController {
             return null;
         });
 
-        colStatusVar.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().pago() ? "PAGO" : "PENDENTE"));
+        // 3. FORMATAÇÃO (Visual)
+        NumberFormat formatoMoeda = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
+        NumberFormat formatoQtd = NumberFormat.getNumberInstance(new Locale("pt", "BR"));
 
-        // Configura os botões
+        // Formata Valor Total
+        colValorVar.setCellFactory(tc -> new TableCell<>() {
+            @Override
+            protected void updateItem(BigDecimal valor, boolean empty) {
+                super.updateItem(valor, empty);
+                if (empty || valor == null) setText(null);
+                else setText(formatoMoeda.format(valor));
+            }
+        });
+
+        // Formata Valor Unitário
+        colUnitarioVar.setCellFactory(tc -> new TableCell<>() {
+            @Override
+            protected void updateItem(BigDecimal valor, boolean empty) {
+                super.updateItem(valor, empty);
+                if (empty || valor == null) setText(null);
+                else setText(formatoMoeda.format(valor));
+            }
+        });
+
+        // Formata Quantidade
+        colQtdVar.setCellFactory(tc -> new TableCell<>() {
+            @Override
+            protected void updateItem(BigDecimal qtd, boolean empty) {
+                super.updateItem(qtd, empty);
+                if (empty || qtd == null) setText(null);
+                else setText(formatoQtd.format(qtd));
+            }
+        });
+
+        // 4. AÇÕES
         criarBotaoAcoes(colAcoesVar, tabelaVariaveis);
     }
 
-    // Método genérico para criar botões em qualquer tabela
+    // Configura o evento de clique duplo para qualquer tabela
+    private void configurarEdicao(TableView<Conta> tabela) {
+        tabela.setRowFactory(tv -> {
+            TableRow<Conta> row = new TableRow<>();
+            row.setOnMouseClicked(event -> {
+                if (event.getClickCount() == 2 && (!row.isEmpty())) {
+                    Conta contaSelecionada = row.getItem();
+                    abrirFormulario(contaSelecionada); // Chama o form passando a conta
+                }
+            });
+            return row;
+        });
+    }
+
+    // Refatoramos para aceitar um parâmetro opcional
+    private void abrirFormulario(Conta contaParaEditar) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/tech/clavem303/view/FormularioConta.fxml"));
+            Parent page = loader.load();
+
+            Stage dialogStage = new Stage();
+            dialogStage.setTitle(contaParaEditar == null ? "Nova Conta" : "Editar Conta");
+            dialogStage.initModality(Modality.WINDOW_MODAL);
+            dialogStage.initOwner(tabelaFixas.getScene().getWindow());
+            dialogStage.setScene(new Scene(page));
+
+            FormularioContaController controller = loader.getController();
+            controller.setDialogStage(dialogStage);
+            controller.setService(this.service);
+
+            // Se tiver conta, injeta ela no controller
+            if (contaParaEditar != null) {
+                controller.setContaParaEditar(contaParaEditar);
+            }
+
+            dialogStage.showAndWait();
+
+            // Atualiza as tabelas após fechar a janela
+            tabelaFixas.refresh();
+            tabelaVariaveis.refresh();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Méto-do genérico para criar botões em qualquer tabela
     private void criarBotaoAcoes(TableColumn<Conta, Void> coluna, TableView<Conta> tabelaOrigem) {
         coluna.setCellFactory(param -> new TableCell<>() {
             private final Button btnPagar = new Button();
@@ -152,23 +274,6 @@ public class ContasController {
 
     @FXML
     private void btnNovaContaAction() {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/tech/clavem303/view/FormularioConta.fxml"));
-            Parent page = loader.load();
-            Stage dialogStage = new Stage();
-            dialogStage.setTitle("Nova Conta");
-            dialogStage.initModality(Modality.WINDOW_MODAL);
-            dialogStage.initOwner(tabelaFixas.getScene().getWindow()); // Pega a janela atual
-            dialogStage.setScene(new Scene(page));
-
-            FormularioContaController controller = loader.getController();
-            controller.setDialogStage(dialogStage);
-            controller.setService(this.service);
-
-            dialogStage.showAndWait();
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        abrirFormulario(null);
     }
 }
