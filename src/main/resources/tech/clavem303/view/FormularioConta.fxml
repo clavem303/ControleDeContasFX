@@ -20,6 +20,10 @@
 
         <Label text="Vencimento:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
         <DatePicker fx:id="dateVencimento" prefWidth="200" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+        <Label text="Status:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+        <CheckBox fx:id="chkPago" text="Marcar como Pago" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+
     </GridPane>
 
     <Separator/>

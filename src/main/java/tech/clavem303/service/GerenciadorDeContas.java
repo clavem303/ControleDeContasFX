@@ -61,13 +61,9 @@ public class GerenciadorDeContas {
     public void atualizarConta(Conta contaAntiga, Conta contaNova) {
         int index = contas.indexOf(contaAntiga);
         if (index >= 0) {
-            // Mantém o status de pagamento original se desejar, ou usa o da nova
-            // Aqui vamos assumir que a edição preserva o status de pagamento da antiga
-            // a menos que o usuário tenha mudado isso explicitamente (mas nosso form não tem campo pago).
-            // Vamos forçar o status da antiga para manter consistência:
-            Conta contaFinal = contaNova.comStatusPago(contaAntiga.pago());
-
-            contas.set(index, contaFinal);
+            // Agora confiamos totalmente na contaNova que veio do formulário,
+            // pois ela já traz o status correto do Checkbox.
+            contas.set(index, contaNova);
         }
     }
 }

@@ -95,3 +95,39 @@
 
 /* Cor da segunda fatia (Variáveis) */
 .default-color1.chart-pie { -fx-pie-color: #ff9800; }
+
+/* --- BADGES (Etiquetas de Status) --- */
+.badge-container {
+    -fx-alignment: CENTER;
+}
+
+.badge {
+    -fx-padding: 5 12;
+    -fx-background-radius: 12;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+
+/* PAGO: Verde (Sucesso) */
+.status-pago {
+    -fx-background-color: #d4edda; /* Fundo Verde Claro */
+    -fx-text-fill: #155724;        /* Texto Verde Escuro */
+    -fx-border-color: #c3e6cb;     /* Borda sutil */
+    -fx-border-radius: 12;
+}
+
+/* RECEBIDO: Azul (Informação) */
+.status-recebido {
+    -fx-background-color: #cce5ff; /* Fundo Azul Claro (bem diferente do verde) */
+    -fx-text-fill: #004085;        /* Texto Azul Escuro */
+    -fx-border-color: #b8daff;
+    -fx-border-radius: 12;
+}
+
+/* PENDENTE: Vermelho/Rosa (Alerta) */
+.status-pendente {
+    -fx-background-color: #f8d7da; /* Fundo Rosado */
+    -fx-text-fill: #721c24;        /* Texto Vermelho Escuro */
+    -fx-border-color: #f5c6cb;
+    -fx-border-radius: 12;
+}

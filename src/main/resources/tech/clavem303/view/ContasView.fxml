@@ -14,7 +14,7 @@
     </padding>
 
     <HBox alignment="CENTER_LEFT" spacing="20">
-        <Label text="Minhas Contas" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
+        <Label text="Minhas Finanças" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
         <HBox HBox.hgrow="ALWAYS" />
         <Button text="Novo Registro" styleClass="action-button" onAction="#btnNovaContaAction">
             <graphic>

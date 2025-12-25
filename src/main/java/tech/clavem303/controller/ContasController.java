@@ -123,7 +123,7 @@ public class ContasController {
         });
 
         // Status
-        colStatusReceita.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().pago() ? "RECEBIDO" : "PENDENTE"));
+        configurarColunaStatus(colStatusReceita, true); // true = usa termo "RECEBIDO"
 
         // Ações
         criarBotaoAcoes(colAcoesReceita, tabelaReceitas);
@@ -136,11 +136,7 @@ public class ContasController {
         colVencimentoFixa.setCellValueFactory(d -> new SimpleObjectProperty<>(d.getValue().dataVencimento()));
         colValorFixa.setCellValueFactory(d -> new SimpleObjectProperty<>(d.getValue().valor()));
 
-        // Lógica do Status (Se está pago ou pendente)
-        colStatusFixa.setCellValueFactory(d -> {
-            boolean pago = d.getValue().pago();
-            return new SimpleStringProperty(pago ? "PAGO" : "PENDENTE");
-        });
+        configurarColunaStatus(colStatusFixa, false);
 
         // 2. FORMATAÇÃO (Como Mostrar - R$)
         NumberFormat formatoMoeda = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
@@ -168,9 +164,7 @@ public class ContasController {
         colVencimentoVar.setCellValueFactory(d -> new SimpleObjectProperty<>(d.getValue().dataVencimento()));
         colValorVar.setCellValueFactory(d -> new SimpleObjectProperty<>(d.getValue().valor())); // O Total
 
-        colStatusVar.setCellValueFactory(d ->
-                new SimpleStringProperty(d.getValue().pago() ? "PAGO" : "PENDENTE")
-        );
+        configurarColunaStatus(colStatusVar, false);
 
         // 2. DADOS ESPECÍFICOS (ContaVariavel) - Aqui estava o problema principal
         colQtdVar.setCellValueFactory(d -> {
@@ -240,7 +234,7 @@ public class ContasController {
     }
 
     // Refatoramos para aceitar um parâmetro opcional
-    private void abrirFormulario(Conta contaParaEditar) {
+    private void abrirFormulario(Conta contaParaEditar)     {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/tech/clavem303/view/FormularioConta.fxml"));
             Parent page = loader.load();
@@ -314,6 +308,48 @@ public class ContasController {
                     Conta conta = getTableView().getItems().get(getIndex());
                     btnPagar.setDisable(conta.pago());
                     setGraphic(container);
+                }
+            }
+        });
+    }
+
+    private void configurarColunaStatus(TableColumn<Conta, String> coluna, boolean isReceita) {
+        // 1. Define o valor do texto
+        coluna.setCellValueFactory(d -> {
+            boolean pago = d.getValue().pago();
+            if (isReceita) {
+                return new SimpleStringProperty(pago ? "RECEBIDO" : "PENDENTE");
+            } else {
+                return new SimpleStringProperty(pago ? "PAGO" : "PENDENTE");
+            }
+        });
+
+        // 2. Define o visual (Badge)
+        coluna.setCellFactory(tc -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+
+                if (empty || item == null) {
+                    setGraphic(null);
+                    setText(null);
+                } else {
+                    // Cria a etiqueta
+                    Label badge = new Label(item);
+                    badge.getStyleClass().add("badge");
+
+                    // Aplica a cor correta baseada no texto
+                    switch (item) {
+                        case "PAGO" -> badge.getStyleClass().add("status-pago");
+                        case "RECEBIDO" -> badge.getStyleClass().add("status-recebido"); // Azulzinho
+                        case "PENDENTE" -> badge.getStyleClass().add("status-pendente");
+                    }
+
+                    // Centraliza
+                    HBox container = new HBox(badge);
+                    container.setAlignment(javafx.geometry.Pos.CENTER);
+                    setGraphic(container);
+                    setText(null); // Remove o texto padrão da célula
                 }
             }
         });

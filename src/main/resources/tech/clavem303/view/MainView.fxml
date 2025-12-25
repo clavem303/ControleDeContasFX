@@ -14,9 +14,13 @@
 
     <left>
         <VBox styleClass="sidebar" spacing="10">
-            <HBox alignment="CENTER" styleClass="sidebar-header">
-                <FontIcon iconLiteral="fas-wallet" iconSize="24" styleClass="sidebar-icon-logo"/>
-                <Label text="FinançasFX" styleClass="app-title"/>
+            <HBox alignment="CENTER_LEFT" styleClass="sidebar-header" spacing="10">
+                <FontIcon iconLiteral="fas-wallet" iconSize="28" styleClass="sidebar-icon-logo"/>
+
+                <VBox alignment="CENTER_LEFT" spacing="-2">
+                    <Label text="Clavem303" style="-fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold;"/>
+                    <Label text="Finanças" style="-fx-text-fill: #A0A0A0; -fx-font-size: 12px;"/>
+                </VBox>
             </HBox>
 
             <Button text="Dashboard" onAction="#btnDashboardAction" styleClass="nav-button">

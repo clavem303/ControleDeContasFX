@@ -9,6 +9,7 @@ import tech.clavem303.factory.ContaFactory;
 import tech.clavem303.model.Conta;
 import tech.clavem303.model.ContaFixa;
 import tech.clavem303.model.ContaVariavel;
+import tech.clavem303.model.Receita;
 import tech.clavem303.service.GerenciadorDeContas;
 
 import java.math.BigDecimal;
@@ -24,6 +25,7 @@ public class FormularioContaController {
     @FXML private TextField txtQuantidade;
     @FXML private TextField txtValorUnitario;
     @FXML private Button btnSalvar; // Para mudar o texto do botão
+    @FXML private CheckBox chkPago; // <--- NOVO INJECT
 
     private GerenciadorDeContas service;
     private Stage dialogStage;
@@ -32,7 +34,10 @@ public class FormularioContaController {
     @FXML
     public void initialize() {
         comboTipo.getItems().addAll("RECEITA", "DESPESA FIXA", "DESPESA VARIÁVEL");
-        comboTipo.valueProperty().addListener((obs, oldVal, newVal) -> atualizarCampos(newVal));
+        comboTipo.valueProperty().addListener((obs, oldVal, newVal) -> {
+            atualizarCampos(newVal);
+            atualizarTextoCheckbox(newVal);
+        });
         comboTipo.getSelectionModel().select("DESPESA FIXA");
     }
 
@@ -52,6 +57,9 @@ public class FormularioContaController {
         btnSalvar.setText("Atualizar");
         comboTipo.setDisable(true);
 
+        // CARREGA O STATUS DO OBJETO PARA O CHECKBOX
+        chkPago.setSelected(conta.pago());
+
         if (conta instanceof ContaFixa) {
             // Mapeia para o nome visual
             comboTipo.getSelectionModel().select("DESPESA FIXA");
@@ -63,10 +71,12 @@ public class FormularioContaController {
             txtQuantidade.setText(cv.quantidade().toString());
             txtValorUnitario.setText(cv.valorUnitario().toString());
         }
-        else if (conta instanceof tech.clavem303.model.Receita) {
+        else if (conta instanceof Receita) {
             comboTipo.getSelectionModel().select("RECEITA");
             txtValorFixo.setText(conta.valor().toString());
         }
+
+        atualizarTextoCheckbox(comboTipo.getValue());
     }
 
     private void atualizarCampos(String tipo) {
@@ -81,6 +91,14 @@ public class FormularioContaController {
 
         // Dica visual: Mudar label de Vencimento para Recebimento?
         // (Opcional, pode deixar genérico por enquanto)
+    }
+
+    private void atualizarTextoCheckbox(String tipo) {
+        if ("RECEITA".equals(tipo)) {
+            chkPago.setText("Já foi recebido?");
+        } else {
+            chkPago.setText("Já foi pago?");
+        }
     }
 
     @FXML
@@ -121,10 +139,13 @@ public class FormularioContaController {
             // Agora chamamos a factory com o tipoTecnico
             Conta novaConta = ContaFactory.criarConta(tipoTecnico, desc, vencto, valor, qtd, unitario);
 
+            boolean statusFinal = chkPago.isSelected();
+            Conta contaFinal = novaConta.comStatusPago(statusFinal);
+
             if (contaEdicao == null) {
-                service.adicionarConta(novaConta);
+                service.adicionarConta(contaFinal);
             } else {
-                service.atualizarConta(contaEdicao, novaConta);
+                service.atualizarConta(contaEdicao, contaFinal);
             }
 
             dialogStage.close();
