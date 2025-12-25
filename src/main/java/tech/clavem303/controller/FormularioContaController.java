@@ -31,9 +31,9 @@ public class FormularioContaController {
 
     @FXML
     public void initialize() {
-        comboTipo.getItems().addAll("FIXA", "VARIAVEL");
+        comboTipo.getItems().addAll("RECEITA", "DESPESA FIXA", "DESPESA VARIÁVEL");
         comboTipo.valueProperty().addListener((obs, oldVal, newVal) -> atualizarCampos(newVal));
-        comboTipo.getSelectionModel().select("FIXA");
+        comboTipo.getSelectionModel().select("DESPESA FIXA");
     }
 
     public void setService(GerenciadorDeContas service) {
@@ -44,42 +44,49 @@ public class FormularioContaController {
         this.dialogStage = dialogStage;
     }
 
-    // NOVO: Método para injetar a conta que será editada
     public void setContaParaEditar(Conta conta) {
         this.contaEdicao = conta;
 
-        // Preenche os campos comuns
         txtDescricao.setText(conta.descricao());
         dateVencimento.setValue(conta.dataVencimento());
-        btnSalvar.setText("Atualizar"); // Feedback visual
-
-        // Bloqueia a troca de tipo durante edição para simplificar
+        btnSalvar.setText("Atualizar");
         comboTipo.setDisable(true);
 
-        // Preenche campos específicos usando Pattern Matching (Java 16+)
         if (conta instanceof ContaFixa) {
-            comboTipo.getSelectionModel().select("FIXA");
+            // Mapeia para o nome visual
+            comboTipo.getSelectionModel().select("DESPESA FIXA");
             txtValorFixo.setText(conta.valor().toString());
         }
         else if (conta instanceof ContaVariavel cv) {
-            comboTipo.getSelectionModel().select("VARIAVEL");
+            // Mapeia para o nome visual
+            comboTipo.getSelectionModel().select("DESPESA VARIÁVEL");
             txtQuantidade.setText(cv.quantidade().toString());
             txtValorUnitario.setText(cv.valorUnitario().toString());
+        }
+        else if (conta instanceof tech.clavem303.model.Receita) {
+            comboTipo.getSelectionModel().select("RECEITA");
+            txtValorFixo.setText(conta.valor().toString());
         }
     }
 
     private void atualizarCampos(String tipo) {
-        boolean isFixa = "FIXA".equals(tipo);
-        areaFixa.setVisible(isFixa);
-        areaFixa.setManaged(isFixa);
-        areaVariavel.setVisible(!isFixa);
-        areaVariavel.setManaged(!isFixa);
+        // Receita se comporta igual Fixa (só precisa de Valor Total)
+        boolean isSimples = "DESPESA FIXA".equals(tipo) || "RECEITA".equals(tipo);
+
+        areaFixa.setVisible(isSimples);
+        areaFixa.setManaged(isSimples);
+
+        areaVariavel.setVisible(!isSimples);
+        areaVariavel.setManaged(!isSimples);
+
+        // Dica visual: Mudar label de Vencimento para Recebimento?
+        // (Opcional, pode deixar genérico por enquanto)
     }
 
     @FXML
     private void salvar() {
         try {
-            String tipo = comboTipo.getValue();
+            String tipoVisual = comboTipo.getValue(); // Ex: "DESPESA FIXA"
             String desc = txtDescricao.getText();
             var vencto = dateVencimento.getValue();
 
@@ -90,20 +97,33 @@ public class FormularioContaController {
 
             BigDecimal valor = null, qtd = null, unitario = null;
 
-            if ("FIXA".equals(tipo)) {
-                valor = new BigDecimal(txtValorFixo.getText().replace(",", "."));
+            // Lógica visual para ler os campos
+            if ("DESPESA FIXA".equals(tipoVisual) || "RECEITA".equals(tipoVisual)) {
+                String valorTexto = txtValorFixo.getText().replace(".", "").replace(",", ".");
+                valor = new BigDecimal(valorTexto);
             } else {
                 qtd = new BigDecimal(txtQuantidade.getText().replace(",", "."));
                 unitario = new BigDecimal(txtValorUnitario.getText().replace(",", "."));
             }
 
-            Conta novaConta = ContaFactory.criarConta(tipo, desc, vencto, valor, qtd, unitario);
+            // --- TRADUÇÃO PARA A FACTORY ---
+            // A Factory só entende "FIXA" ou "VARIAVEL". Vamos traduzir:
+            String tipoTecnico;
+            if ("DESPESA FIXA".equals(tipoVisual)) {
+                tipoTecnico = "FIXA";
+            } else if ("DESPESA VARIÁVEL".equals(tipoVisual)) {
+                tipoTecnico = "VARIAVEL";
+            } else {
+                tipoTecnico = "RECEITA";
+            }
+            // -------------------------------
+
+            // Agora chamamos a factory com o tipoTecnico
+            Conta novaConta = ContaFactory.criarConta(tipoTecnico, desc, vencto, valor, qtd, unitario);
 
             if (contaEdicao == null) {
-                // Modo CRIAÇÃO
                 service.adicionarConta(novaConta);
             } else {
-                // Modo EDIÇÃO
                 service.atualizarConta(contaEdicao, novaConta);
             }
 
@@ -113,6 +133,7 @@ public class FormularioContaController {
             mostrarAlerta("Verifique os números digitados.");
         } catch (Exception e) {
             mostrarAlerta("Erro: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 

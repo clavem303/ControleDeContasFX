@@ -3,6 +3,7 @@ package tech.clavem303.factory;
 import tech.clavem303.model.Conta;
 import tech.clavem303.model.ContaFixa;
 import tech.clavem303.model.ContaVariavel;
+import tech.clavem303.model.Receita;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -21,13 +22,17 @@ public class ContaFactory {
 
         return switch (tipoUpper) {
             case "FIXA" -> new ContaFixa(descricao, valor, dataVencimento);
+
+            // --- NOVO CASE ---
+            case "RECEITA" -> new Receita(descricao, valor, dataVencimento, false);
+
             case "VARIAVEL" -> {
                 if (quantidade == null || valorUnitario == null) {
                     throw new IllegalArgumentException("Conta Variável requer Quantidade e Valor Unitário.");
                 }
                 yield new ContaVariavel(descricao, dataVencimento, quantidade, valorUnitario);
             }
-            default -> throw new IllegalArgumentException("Tipo de conta inválido: " + tipo);
+            default -> throw new IllegalArgumentException("Tipo inválido: " + tipo);
         };
     }
 }

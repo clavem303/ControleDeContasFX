@@ -11,12 +11,12 @@ import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import javafx.util.Callback;
 import org.kordamp.ikonli.javafx.FontIcon;
 import tech.clavem303.model.Conta;
 import tech.clavem303.model.ContaFixa;
 import tech.clavem303.model.ContaVariavel;
 import tech.clavem303.service.GerenciadorDeContas;
+import tech.clavem303.model.Receita;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -25,6 +25,20 @@ import java.time.LocalDate;
 import java.util.Locale;
 
 public class ContasController {
+
+    // --- Tabela RECEITAS ---
+    @FXML
+    private TableView<Conta> tabelaReceitas;
+    @FXML
+    private TableColumn<Conta, String> colDescReceita;
+    @FXML
+    private TableColumn<Conta, LocalDate> colDataReceita;
+    @FXML
+    private TableColumn<Conta, BigDecimal> colValorReceita;
+    @FXML
+    private TableColumn<Conta, String> colStatusReceita;
+    @FXML
+    private TableColumn<Conta, Void> colAcoesReceita;
 
     // --- Tabela FIXAS ---
     @FXML
@@ -63,6 +77,10 @@ public class ContasController {
     public void setService(GerenciadorDeContas service) {
         this.service = service;
 
+        // Filtro para RECEITAS
+        FilteredList<Conta> listaReceitas = new FilteredList<>(service.getContas(), c -> c instanceof Receita);
+        tabelaReceitas.setItems(listaReceitas);
+
         // 1. Cria lista filtrada apenas para FIXAS
         FilteredList<Conta> listaFixas = new FilteredList<>(service.getContas(), conta -> conta instanceof ContaFixa);
         tabelaFixas.setItems(listaFixas);
@@ -74,12 +92,41 @@ public class ContasController {
 
     @FXML
     public void initialize() {
+        configurarTabelaReceitas();
         configurarTabelaFixa();
         configurarTabelaVariavel();
 
         // NOVO: Configura o clique duplo
+        configurarEdicao(tabelaReceitas);
         configurarEdicao(tabelaFixas);
         configurarEdicao(tabelaVariaveis);
+    }
+
+    private void configurarTabelaReceitas() {
+        // Reutiliza a lógica padrão
+        colDescReceita.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().descricao()));
+        colDataReceita.setCellValueFactory(d -> new SimpleObjectProperty<>(d.getValue().dataVencimento()));
+
+        // Valor e Formatação
+        NumberFormat formatoMoeda = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
+        colValorReceita.setCellValueFactory(d -> new SimpleObjectProperty<>(d.getValue().valor()));
+        colValorReceita.setCellFactory(tc -> new TableCell<>() {
+            @Override
+            protected void updateItem(BigDecimal valor, boolean empty) {
+                super.updateItem(valor, empty);
+                if (empty || valor == null) setText(null);
+                else {
+                    setText(formatoMoeda.format(valor));
+                    setStyle("-fx-text-fill: #4CAF50; -fx-font-weight: bold;"); // Verde para dinheiro entrando!
+                }
+            }
+        });
+
+        // Status
+        colStatusReceita.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().pago() ? "RECEBIDO" : "PENDENTE"));
+
+        // Ações
+        criarBotaoAcoes(colAcoesReceita, tabelaReceitas);
     }
 
     // Substitua o méto-do configurarTabelaFixa por este:
@@ -199,7 +246,7 @@ public class ContasController {
             Parent page = loader.load();
 
             Stage dialogStage = new Stage();
-            dialogStage.setTitle(contaParaEditar == null ? "Nova Conta" : "Editar Conta");
+            dialogStage.setTitle(contaParaEditar == null ? "Novo Registro" : "Editar Registro");
             dialogStage.initModality(Modality.WINDOW_MODAL);
             dialogStage.initOwner(tabelaFixas.getScene().getWindow());
             dialogStage.setScene(new Scene(page));

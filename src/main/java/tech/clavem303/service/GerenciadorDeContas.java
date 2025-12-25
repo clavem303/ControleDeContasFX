@@ -3,6 +3,7 @@ package tech.clavem303.service;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import tech.clavem303.model.Conta;
+import tech.clavem303.model.Receita;
 
 import java.math.BigDecimal;
 
@@ -28,7 +29,18 @@ public class GerenciadorDeContas {
 
     public BigDecimal calcularTotalAPagar() {
         return contas.stream()
+                // Ignora Receitas e contas pagas
+                .filter(c -> !(c instanceof Receita))
                 .filter(c -> !c.pago())
+                .map(Conta::valor)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    // NOVO MÉTODO ÚTIL PARA O DASHBOARD FUTURO
+    public BigDecimal calcularTotalRecebido() {
+        return contas.stream()
+                .filter(c -> c instanceof Receita)
+                .filter(Conta::pago) // Só conta se já recebeu
                 .map(Conta::valor)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }

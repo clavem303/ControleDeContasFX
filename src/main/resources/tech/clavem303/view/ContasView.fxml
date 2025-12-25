@@ -16,7 +16,7 @@
     <HBox alignment="CENTER_LEFT" spacing="20">
         <Label text="Minhas Contas" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
         <HBox HBox.hgrow="ALWAYS" />
-        <Button text="Nova Conta" styleClass="action-button" onAction="#btnNovaContaAction">
+        <Button text="Novo Registro" styleClass="action-button" onAction="#btnNovaContaAction">
             <graphic>
                 <FontIcon iconLiteral="fas-plus" iconColor="WHITE"/>
             </graphic>
@@ -24,6 +24,23 @@
     </HBox>
 
     <TabPane tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
+
+        <Tab text="Receitas">
+            <content>
+                <TableView fx:id="tabelaReceitas" styleClass="table-view">
+                    <columns>
+                        <TableColumn fx:id="colDescReceita" text="Fonte de Renda" prefWidth="250"/>
+                        <TableColumn fx:id="colDataReceita" text="Data Rec." prefWidth="120"/>
+                        <TableColumn fx:id="colValorReceita" text="Valor" prefWidth="120"/>
+                        <TableColumn fx:id="colStatusReceita" text="Status" prefWidth="100"/>
+                        <TableColumn fx:id="colAcoesReceita" text="Ações" prefWidth="100"/>
+                    </columns>
+                    <placeholder>
+                        <Label text="Nenhuma receita cadastrada."/>
+                    </placeholder>
+                </TableView>
+            </content>
+        </Tab>
 
         <Tab text="Contas Fixas">
             <content>

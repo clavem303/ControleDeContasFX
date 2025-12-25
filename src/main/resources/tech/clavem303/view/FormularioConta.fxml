@@ -9,7 +9,7 @@
       fx:controller="tech.clavem303.controller.FormularioContaController"
       style="-fx-background-color: white; -fx-padding: 20;">
 
-    <Text text="Nova Conta" style="-fx-font-size: 20px; -fx-font-weight: bold;"/>
+    <Text text="Novo Registro" style="-fx-font-size: 20px; -fx-font-weight: bold;"/>
 
     <GridPane vgap="10" hgap="10">
         <Label text="Tipo:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
