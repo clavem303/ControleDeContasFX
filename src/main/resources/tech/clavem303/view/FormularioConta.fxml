@@ -24,6 +24,15 @@
         <Label text="Status:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
         <CheckBox fx:id="chkPago" text="Marcar como Pago" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
 
+        <Label text="Categoria:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+        <ComboBox fx:id="comboCategoria" prefWidth="250" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+
+        <Label text="Origem/Local:" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
+        <TextField fx:id="txtOrigem" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
+
+        <Label text="Pago no:" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
+        <ComboBox fx:id="comboPagamento" prefWidth="250" GridPane.rowIndex="6" GridPane.columnIndex="1"/>
+
     </GridPane>
 
     <Separator/>

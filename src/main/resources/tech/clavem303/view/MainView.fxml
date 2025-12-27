@@ -5,6 +5,8 @@
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.geometry.Insets?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
 
 <BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
@@ -23,22 +25,34 @@
                 </VBox>
             </HBox>
 
+            <Region style="-fx-background-color: #2D2D3A; -fx-pref-height: 1; -fx-max-height: 1;" />
+            <Region prefHeight="10" />
+
             <Button text="Dashboard" onAction="#btnDashboardAction" styleClass="nav-button">
                 <graphic>
                     <FontIcon iconLiteral="fas-chart-pie" />
                 </graphic>
             </Button>
 
-            <Button text="Minhas Contas" onAction="#btnContasAction" styleClass="nav-button">
+            <Button text="Registros" onAction="#btnContasAction" styleClass="nav-button">
                 <graphic>
                     <FontIcon iconLiteral="fas-list" />
                 </graphic>
             </Button>
 
-            <Button text="Configurações" styleClass="nav-button">
+            <Button text="Configurações" styleClass="nav-button" onAction="#btnConfiguracoesAction">
                 <graphic>
                     <FontIcon iconLiteral="fas-cog" />
                 </graphic>
+            </Button>
+
+            <Button text="Sair" styleClass="nav-button" id="btnSair" onAction="#btnSairAction">
+                <graphic>
+                    <FontIcon iconLiteral="fas-sign-out-alt" />
+                </graphic>
+                <VBox.margin>
+                    <javafx.geometry.Insets top="20"/>
+                </VBox.margin>
             </Button>
         </VBox>
     </left>

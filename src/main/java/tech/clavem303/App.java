@@ -18,8 +18,10 @@ public class App extends Application {
 
         Scene scene = new Scene(root);
 
-        stage.setTitle("Controle de Contas - Dashboard");
+        stage.setTitle("Clavem303 Finanças");
         stage.setScene(scene);
+        // --- MUDANÇA AQUI: Iniciar Maximizado ---
+        stage.setMaximized(true);
         stage.show();
     }
 

@@ -16,21 +16,24 @@ public class ContaFactory {
             LocalDate dataVencimento,
             BigDecimal valor,
             BigDecimal quantidade,
-            BigDecimal valorUnitario) {
+            BigDecimal valorUnitario,
+            String categoria,
+            String origem,
+            String formaPagamento // <--- NOVO
+    ) {
 
         String tipoUpper = tipo.toUpperCase();
 
         return switch (tipoUpper) {
-            case "FIXA" -> new ContaFixa(descricao, valor, dataVencimento);
+            case "FIXA" -> new ContaFixa(descricao, valor, dataVencimento, categoria, origem, formaPagamento);
 
-            // --- NOVO CASE ---
-            case "RECEITA" -> new Receita(descricao, valor, dataVencimento, false);
+            case "RECEITA" -> new Receita(descricao, valor, dataVencimento, false, categoria, origem, formaPagamento);
 
             case "VARIAVEL" -> {
                 if (quantidade == null || valorUnitario == null) {
                     throw new IllegalArgumentException("Conta Variável requer Quantidade e Valor Unitário.");
                 }
-                yield new ContaVariavel(descricao, dataVencimento, quantidade, valorUnitario);
+                yield new ContaVariavel(descricao, dataVencimento, quantidade, valorUnitario, categoria, origem, formaPagamento);
             }
             default -> throw new IllegalArgumentException("Tipo inválido: " + tipo);
         };

@@ -134,4 +134,10 @@ public class GerenciadorDeContas {
                 .map(Conta::valor)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
+
+    // NOVO MÉTO-DO: Limpa a memória e relê o arquivo do disco
+    public void recarregarDados() {
+        this.contas.clear(); // Limpa a lista atual (memória)
+        carregarDados();     // Lê novamente do arquivo json (disco)
+    }
 }

@@ -32,6 +32,12 @@ public class ContasController {
     @FXML
     private TableColumn<Conta, String> colDescReceita;
     @FXML
+    private TableColumn<Conta, String> colCatReceita;     // NOVO
+    @FXML
+    private TableColumn<Conta, String> colPagamentoReceita;
+    @FXML
+    private TableColumn<Conta, String> colOrigemReceita;  // NOVO
+    @FXML
     private TableColumn<Conta, LocalDate> colDataReceita;
     @FXML
     private TableColumn<Conta, BigDecimal> colValorReceita;
@@ -46,6 +52,12 @@ public class ContasController {
     @FXML
     private TableColumn<Conta, String> colDescricaoFixa;
     @FXML
+    private TableColumn<Conta, String> colCatFixa;     // NOVO
+    @FXML
+    private TableColumn<Conta, String> colPagamentoFixa;
+    @FXML
+    private TableColumn<Conta, String> colOrigemFixa;  // NOVO
+    @FXML
     private TableColumn<Conta, LocalDate> colVencimentoFixa;
     @FXML
     private TableColumn<Conta, BigDecimal> colValorFixa;
@@ -59,6 +71,12 @@ public class ContasController {
     private TableView<Conta> tabelaVariaveis;
     @FXML
     private TableColumn<Conta, String> colDescricaoVar;
+    @FXML
+    private TableColumn<Conta, String> colCatVar;     // NOVO
+    @FXML
+    private TableColumn<Conta, String> colPagamentoVar;
+    @FXML
+    private TableColumn<Conta, String> colOrigemVar;  // NOVO
     @FXML
     private TableColumn<Conta, BigDecimal> colQtdVar;       // Específico
     @FXML
@@ -105,6 +123,9 @@ public class ContasController {
     private void configurarTabelaReceitas() {
         // Reutiliza a lógica padrão
         colDescReceita.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().descricao()));
+        colCatReceita.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().categoria()));
+        colPagamentoReceita.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().formaPagamento()));
+        colOrigemReceita.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().origem()));
         colDataReceita.setCellValueFactory(d -> new SimpleObjectProperty<>(d.getValue().dataVencimento()));
 
         // Valor e Formatação
@@ -133,6 +154,9 @@ public class ContasController {
     private void configurarTabelaFixa() {
         // 1. DADOS (O Que Mostrar)
         colDescricaoFixa.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().descricao()));
+        colCatFixa.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().categoria()));
+        colPagamentoFixa.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().formaPagamento()));
+        colOrigemFixa.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().origem()));
         colVencimentoFixa.setCellValueFactory(d -> new SimpleObjectProperty<>(d.getValue().dataVencimento()));
         colValorFixa.setCellValueFactory(d -> new SimpleObjectProperty<>(d.getValue().valor()));
 
@@ -161,6 +185,9 @@ public class ContasController {
     private void configurarTabelaVariavel() {
         // 1. DADOS GERAIS (Interface Conta)
         colDescricaoVar.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().descricao()));
+        colCatVar.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().categoria()));
+        colPagamentoVar.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().formaPagamento()));
+        colOrigemVar.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().origem()));
         colVencimentoVar.setCellValueFactory(d -> new SimpleObjectProperty<>(d.getValue().dataVencimento()));
         colValorVar.setCellValueFactory(d -> new SimpleObjectProperty<>(d.getValue().valor())); // O Total
 

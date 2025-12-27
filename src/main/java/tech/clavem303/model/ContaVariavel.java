@@ -5,28 +5,33 @@ import java.time.LocalDate;
 
 public record ContaVariavel(
         String descricao,
-        BigDecimal valor, // Este será o resultado de quantidade * valorUnitario
+        BigDecimal valor,
         LocalDate dataVencimento,
         boolean pago,
         BigDecimal quantidade,
-        BigDecimal valorUnitario
+        BigDecimal valorUnitario,
+        String categoria,
+        String origem,
+        String formaPagamento // Novo
 ) implements Conta {
 
-    // Construtor Compacto: centraliza a lógica de cálculo e status inicial
-    public ContaVariavel(String descricao, LocalDate dataVencimento, BigDecimal quantidade, BigDecimal valorUnitario) {
+    // Construtor Compacto
+    public ContaVariavel(String descricao, LocalDate dataVencimento, BigDecimal quantidade, BigDecimal valorUnitario, String categoria, String origem, String formaPagamento) {
         this(
                 descricao,
-                quantidade.multiply(valorUnitario), // Calcula o valor total automaticamente
+                quantidade.multiply(valorUnitario),
                 dataVencimento,
-                true, // Contas variáveis (compras diárias) entram como pagas
+                true,
                 quantidade,
-                valorUnitario
+                valorUnitario,
+                categoria,
+                origem,
+                formaPagamento
         );
     }
 
     @Override
     public Conta comStatusPago(boolean novoStatus) {
-        // Como Records são imutáveis, retornamos uma nova instância com o novo status
-        return new ContaVariavel(descricao, valor, dataVencimento, novoStatus, quantidade, valorUnitario);
+        return new ContaVariavel(descricao, valor, dataVencimento, novoStatus, quantidade, valorUnitario, categoria, origem, formaPagamento);
     }
 }

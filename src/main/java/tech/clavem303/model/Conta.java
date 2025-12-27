@@ -8,6 +8,10 @@ public interface Conta {
     BigDecimal valor();
     LocalDate dataVencimento();
     boolean pago();
+    String categoria();
+    String origem();
+    String formaPagamento();
+
 
     Conta comStatusPago(boolean novoStatus);
 }

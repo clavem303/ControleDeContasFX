@@ -10,6 +10,9 @@
     -fx-background-color: -fx-sidebar-bg;
     -fx-padding: 20;
     -fx-pref-width: 220;
+
+    /* ADICIONADO: Sombra na direita para "descolar" do conteúdo */
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 10, 0, 0, 0);
 }
 
 .app-title {
@@ -23,25 +26,36 @@
     -fx-icon-color: -fx-primary-color;
 }
 
-/* Botões do Menu */
+/* Botões do Menu (Maior e Mais Espaçado) */
+/* 2. Botão com preparação para o efeito */
 .nav-button {
     -fx-background-color: transparent;
-    -fx-text-fill: #A0A0A0; /* Cinza claro */
-    -fx-font-size: 14px;
+    -fx-text-fill: #A0A0A0;
+    -fx-font-size: 18px;
     -fx-alignment: CENTER_LEFT;
     -fx-cursor: hand;
-    -fx-pref-width: 180;
+    -fx-pref-width: 200;
+
+    /* ADICIONADO: Borda transparente na esquerda (para o texto não pular no hover) */
+    -fx-border-color: transparent;
+    -fx-border-width: 0 0 0 5; /* 5px de largura na esquerda */
+    -fx-padding: 12 10; /* Ajustei o padding esquerdo para compensar a borda */
 }
 
+/* Ajuste o ícone para acompanhar o texto */
+.nav-button .ikonli-font-icon {
+    -fx-icon-color: #A0A0A0;
+    -fx-icon-size: 20; /* AUMENTADO */
+}
+
+/* 3. O Efeito de Hover "Neon Strip" */
 .nav-button:hover {
     -fx-background-color: #2D2D3A;
     -fx-text-fill: -fx-text-white;
-    -fx-background-radius: 8;
-}
+    -fx-background-radius: 0 8 8 0; /* Arredonda só a direita */
 
-.nav-button .ikonli-font-icon {
-    -fx-icon-color: #A0A0A0;
-    -fx-icon-size: 16;
+    /* ADICIONADO: A mágica! A borda fica da cor primária */
+    -fx-border-color: -fx-primary-color;
 }
 
 .nav-button:hover .ikonli-font-icon {
@@ -84,16 +98,32 @@
     -fx-background-color: #3a2dbf;
 }
 
-/* Cores do Gráfico (Chart) */
-.chart-pie-label {
-    -fx-fill: -fx-text-white; /* Se o fundo for escuro */
-    -fx-font-size: 11px;
+/* Estilo específico para o botão de Sair (Opcional) */
+/* Você precisa adicionar id="btnSair" no FXML do botão para isso funcionar */
+#btnSair:hover {
+    -fx-border-color: #F44336; /* Vermelho */
+    -fx-text-fill: #F44336;
+}
+#btnSair:hover .ikonli-font-icon {
+    -fx-icon-color: #F44336;
 }
 
-/* Cor da primeira fatia (Fixas) */
+/* Cores do Gráfico (Chart) */
+.chart-pie-label {
+    -fx-fill: #444444; /* MUDANÇA: Cinza escuro para aparecer no fundo claro */
+    -fx-font-size: 13px; /* Um pouco maior para leitura fácil */
+    -fx-font-weight: bold;
+}
+
+/* Opcional: A linha que liga a fatia ao texto */
+.chart-pie-label-line {
+    -fx-stroke: #888888;
+}
+
+/* Cor da primeira fatia (Receita) */
 .default-color0.chart-pie { -fx-pie-color: #3f51b5; }
 
-/* Cor da segunda fatia (Variáveis) */
+/* Cor da segunda fatia (Despesa) */
 .default-color1.chart-pie { -fx-pie-color: #ff9800; }
 
 /* --- BADGES (Etiquetas de Status) --- */

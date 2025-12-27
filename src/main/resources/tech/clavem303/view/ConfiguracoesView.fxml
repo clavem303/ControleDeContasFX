@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
+
+<VBox spacing="30" alignment="TOP_CENTER" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="tech.clavem303.controller.ConfiguracoesController"
+      style="-fx-padding: 50; -fx-background-color: white;">
+
+    <Label text="Configurações do Sistema" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #333;"/>
+
+    <Separator/>
+
+    <VBox spacing="15" maxWidth="600" style="-fx-background-color: #F8F9FA; -fx-padding: 30; -fx-background-radius: 10; -fx-border-color: #DEE2E6; -fx-border-radius: 10;">
+        <Label text="Segurança de Dados" style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
+        <Label text="Gerencie seus dados locais. Faça backups regulares." wrapText="true" style="-fx-text-fill: #666;"/>
+
+        <HBox spacing="20" alignment="CENTER">
+            <Button text="Fazer Backup" onAction="#fazerBackup" styleClass="action-button" style="-fx-font-size: 14px; -fx-background-color: #2196F3;">
+                <graphic>
+                    <FontIcon iconLiteral="fas-download" iconColor="WHITE"/>
+                </graphic>
+            </Button>
+
+            <Button text="Restaurar Dados" onAction="#restaurarBackup" styleClass="action-button" style="-fx-font-size: 14px; -fx-background-color: #FF9800;">
+                <graphic>
+                    <FontIcon iconLiteral="fas-upload" iconColor="WHITE"/>
+                </graphic>
+            </Button>
+        </HBox>
+    </VBox>
+
+    <VBox spacing="15" maxWidth="600" style="-fx-background-color: #F8F9FA; -fx-padding: 30; -fx-background-radius: 10; -fx-border-color: #DEE2E6; -fx-border-radius: 10;">
+        <Label text="Sobre" style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
+
+        <HBox spacing="10" alignment="CENTER_LEFT">
+            <FontIcon iconLiteral="fas-code" iconSize="20"/>
+            <Label text="Desenvolvido por Marcondes Cunha Araújo" style="-fx-font-size: 14px;"/>
+        </HBox>
+
+        <HBox spacing="10" alignment="CENTER_LEFT">
+            <FontIcon iconLiteral="fas-envelope" iconSize="20"/>
+            <Label text="clavem303@gmail.com" style="-fx-font-size: 14px;"/>
+        </HBox>
+    </VBox>
+
+</VBox>

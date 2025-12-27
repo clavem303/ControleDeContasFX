@@ -29,11 +29,14 @@
             <content>
                 <TableView fx:id="tabelaReceitas" styleClass="table-view">
                     <columns>
-                        <TableColumn fx:id="colDescReceita" text="Fonte de Renda" prefWidth="250"/>
-                        <TableColumn fx:id="colDataReceita" text="Data Rec." prefWidth="120"/>
-                        <TableColumn fx:id="colValorReceita" text="Valor" prefWidth="120"/>
-                        <TableColumn fx:id="colStatusReceita" text="Status" prefWidth="100"/>
-                        <TableColumn fx:id="colAcoesReceita" text="Ações" prefWidth="100"/>
+                        <TableColumn fx:id="colDescReceita" text="Fonte" prefWidth="200"/>
+                        <TableColumn fx:id="colCatReceita" text="Categoria" prefWidth="150"/>
+                        <TableColumn fx:id="colPagamentoReceita" text="Pgto" prefWidth="80"/>
+                        <TableColumn fx:id="colOrigemReceita" text="Origem" prefWidth="150"/>
+                        <TableColumn fx:id="colDataReceita" text="Data Rec." prefWidth="100"/>
+                        <TableColumn fx:id="colValorReceita" text="Valor" prefWidth="100"/>
+                        <TableColumn fx:id="colStatusReceita" text="Status" prefWidth="90"/>
+                        <TableColumn fx:id="colAcoesReceita" text="Ações" prefWidth="90"/>
                     </columns>
                     <placeholder>
                         <Label text="Nenhuma receita cadastrada."/>
@@ -47,6 +50,9 @@
                 <TableView fx:id="tabelaFixas" styleClass="table-view">
                     <columns>
                         <TableColumn fx:id="colDescricaoFixa" text="Descrição" prefWidth="250"/>
+                        <TableColumn fx:id="colCatFixa" text="Categoria" prefWidth="150"/>
+                        <TableColumn fx:id="colPagamentoFixa" text="Pgto" prefWidth="80"/>
+                        <TableColumn fx:id="colOrigemFixa" text="Origem" prefWidth="150"/>
                         <TableColumn fx:id="colVencimentoFixa" text="Vencimento" prefWidth="120"/>
                         <TableColumn fx:id="colValorFixa" text="Valor (R$)" prefWidth="120"/>
                         <TableColumn fx:id="colStatusFixa" text="Status" prefWidth="100"/>
@@ -64,6 +70,9 @@
                 <TableView fx:id="tabelaVariaveis" styleClass="table-view">
                     <columns>
                         <TableColumn fx:id="colDescricaoVar" text="Descrição" prefWidth="200"/>
+                        <TableColumn fx:id="colCatVar" text="Categoria" prefWidth="150"/>
+                        <TableColumn fx:id="colPagamentoVar" text="Pgto" prefWidth="80"/>
+                        <TableColumn fx:id="colOrigemVar" text="Origem" prefWidth="150"/>
                         <TableColumn fx:id="colQtdVar" text="Qtd" prefWidth="60"/>
                         <TableColumn fx:id="colUnitarioVar" text="V. Unit." prefWidth="80"/>
                         <TableColumn fx:id="colVencimentoVar" text="Data Compra" prefWidth="110"/>
