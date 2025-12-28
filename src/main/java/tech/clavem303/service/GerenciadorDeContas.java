@@ -14,75 +14,55 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class GerenciadorDeContas {
+    private static final Logger LOGGER = Logger.getLogger(GerenciadorDeContas.class.getName());
 
     private final ObservableList<Conta> contas;
     private static final String ARQUIVO_DADOS = "meus_dados.json";
     private final Gson gson;
+    private boolean dadosJaForamCarregados = false;
 
-    // DTO: Classe auxiliar apenas para organizar o salvamento
     private record DadosArmazenados(List<ContaFixa> fixas, List<ContaVariavel> variaveis, List<Receita> receitas) {}
 
     public GerenciadorDeContas() {
         this.contas = FXCollections.observableArrayList();
 
-        // Configura o Gson para entender Datas e formatar o JSON bonito (PrettyPrinting)
         this.gson = new GsonBuilder()
                 .registerTypeAdapter(LocalDate.class, new LocalDateAdapter())
                 .setPrettyPrinting()
                 .create();
-
-        carregarDados(); // Carrega automaticamente ao iniciar
     }
 
-    // --- MÉTODOS DE PERSISTÊNCIA ---
-
     private void salvarDados() {
+        // 1. Prepara os dados (Chama o novo método)
+        DadosArmazenados dados = prepararDadosParaSalvar();
+
+        // 2. Grava no disco
         try (Writer writer = new FileWriter(ARQUIVO_DADOS)) {
-            // 1. Separa a lista única em 3 listas específicas
-            List<ContaFixa> fixas = new ArrayList<>();
-            List<ContaVariavel> variaveis = new ArrayList<>();
-            List<Receita> receitas = new ArrayList<>();
-
-            for (Conta c : contas) {
-                if (c instanceof ContaFixa cf) fixas.add(cf);
-                else if (c instanceof ContaVariavel cv) variaveis.add(cv);
-                else if (c instanceof Receita r) receitas.add(r);
-            }
-
-            // 2. Empacota e escreve no disco
-            DadosArmazenados dados = new DadosArmazenados(fixas, variaveis, receitas);
             gson.toJson(dados, writer);
-
-            System.out.println("Dados salvos com sucesso!");
-
+            // System.out.println("Dados salvos!"); // Opcional: Log de sucesso
         } catch (IOException e) {
-            e.printStackTrace(); // Em app real, mostraríamos um log
+            LOGGER.log(Level.SEVERE, "Erro ao gravar o arquivo JSON", e);
         }
     }
 
     private void carregarDados() {
-        if (!Files.exists(Paths.get(ARQUIVO_DADOS))) return; // Se não tem arquivo, começa vazio
+        // 1. Chama o método extraído para pegar os dados brutos
+        DadosArmazenados dados = lerArquivoJson();
 
-        try (Reader reader = new FileReader(ARQUIVO_DADOS)) {
-            // 1. Lê o JSON para o objeto DTO
-            DadosArmazenados dados = gson.fromJson(reader, DadosArmazenados.class);
+        // 2. Se vier algo, preenche a lista observável
+        if (dados != null) {
+            // Dica: Limpar a lista antes de adicionar evita duplicatas se chamar recarregar
+            // this.contas.clear();
 
-            if (dados != null) {
-                // 2. Adiciona tudo na lista principal
-                if (dados.fixas != null) contas.addAll(dados.fixas);
-                if (dados.variaveis != null) contas.addAll(dados.variaveis);
-                if (dados.receitas != null) contas.addAll(dados.receitas);
-            }
-
-        } catch (IOException e) {
-            e.printStackTrace();
+            if (dados.fixas != null) this.contas.addAll(dados.fixas);
+            if (dados.variaveis != null) this.contas.addAll(dados.variaveis);
+            if (dados.receitas != null) this.contas.addAll(dados.receitas);
         }
     }
-
-    // --- MÉTODOS PÚBLICOS (CRUD) ---
-    // Note que agora todos chamam salvarDados() no final
 
     public void adicionarConta(Conta conta) {
         if (conta != null) {
@@ -92,6 +72,13 @@ public class GerenciadorDeContas {
     }
 
     public ObservableList<Conta> getContas() {
+        // A Lógica do Passo 2 (Cache Inteligente):
+        // "Se os dados ainda não foram carregados, carrega agora. Senão, só devolve a lista."
+        if (!dadosJaForamCarregados) {
+            carregarDados();
+            dadosJaForamCarregados = true; // Marca que já lemos o disco
+        }
+
         return this.contas;
     }
 
@@ -117,8 +104,6 @@ public class GerenciadorDeContas {
         }
     }
 
-    // --- CÁLCULOS (Sem alterações de lógica, apenas mantidos) ---
-
     public BigDecimal calcularTotalAPagar() {
         return contas.stream()
                 .filter(c -> !(c instanceof Receita))
@@ -127,17 +112,38 @@ public class GerenciadorDeContas {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    public BigDecimal calcularTotalRecebido() {
-        return contas.stream()
-                .filter(c -> c instanceof Receita)
-                .filter(Conta::pago)
-                .map(Conta::valor)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    public void recarregarDados() {
+        this.contas.clear();
+        carregarDados();
+        this.dadosJaForamCarregados = true;
     }
 
-    // NOVO MÉTO-DO: Limpa a memória e relê o arquivo do disco
-    public void recarregarDados() {
-        this.contas.clear(); // Limpa a lista atual (memória)
-        carregarDados();     // Lê novamente do arquivo json (disco)
+    private DadosArmazenados lerArquivoJson() {
+        if (!Files.exists(Paths.get(ARQUIVO_DADOS))) {
+            return null; // Arquivo não existe, retorna nulo
+        }
+
+        try (Reader reader = new FileReader(ARQUIVO_DADOS)) {
+            // Faz o parse e retorna o objeto "dados"
+            return gson.fromJson(reader, DadosArmazenados.class);
+        } catch (IOException e) {
+            // Usa o Logger que configuramos anteriormente
+            LOGGER.log(Level.SEVERE, "Erro ao ler o arquivo JSON", e);
+            return null;
+        }
+    }
+
+    private DadosArmazenados prepararDadosParaSalvar() {
+        List<ContaFixa> fixas = new ArrayList<>();
+        List<ContaVariavel> variaveis = new ArrayList<>();
+        List<Receita> receitas = new ArrayList<>();
+
+        for (Conta c : this.contas) {
+            if (c instanceof ContaFixa cf) fixas.add(cf);
+            else if (c instanceof ContaVariavel cv) variaveis.add(cv);
+            else if (c instanceof Receita r) receitas.add(r);
+        }
+
+        return new DadosArmazenados(fixas, variaveis, receitas);
     }
 }

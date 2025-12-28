@@ -1,60 +1,64 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.scene.text.Text?>
+<?import javafx.geometry.Insets?>
 
-<VBox spacing="15" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+<VBox spacing="20" alignment="CENTER" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="tech.clavem303.controller.FormularioContaController"
-      style="-fx-background-color: white; -fx-padding: 20;">
+      style="-fx-padding: 30; -fx-font-size: 16px;" prefWidth="750">
 
-    <Text text="Novo Registro" style="-fx-font-size: 20px; -fx-font-weight: bold;"/>
+    <Label fx:id="lblTitulo" text="Detalhes da Conta" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
 
-    <GridPane vgap="10" hgap="10">
+    <GridPane hgap="15" vgap="15" alignment="CENTER">
+
+        <columnConstraints>
+            <ColumnConstraints hgrow="NEVER" minWidth="190"/>
+            <ColumnConstraints hgrow="ALWAYS"/>
+        </columnConstraints>
+
         <Label text="Tipo:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-        <ComboBox fx:id="comboTipo" prefWidth="200" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+        <ComboBox fx:id="comboTipo" prefWidth="350" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
 
         <Label text="Descrição:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-        <TextField fx:id="txtDescricao" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+        <TextField fx:id="txtDescricao" promptText="Ex: Supermercado" prefWidth="350" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
 
-        <Label text="Vencimento:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
-        <DatePicker fx:id="dateVencimento" prefWidth="200" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+        <Label text="Data:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+        <DatePicker fx:id="dateVencimento" prefWidth="350" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
 
         <Label text="Status:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
         <CheckBox fx:id="chkPago" text="Marcar como Pago" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
 
         <Label text="Categoria:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
-        <ComboBox fx:id="comboCategoria" prefWidth="250" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+        <ComboBox fx:id="comboCategoria" prefWidth="350" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
 
-        <Label text="Origem/Local:" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
-        <TextField fx:id="txtOrigem" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
+        <Label text="Recebido de/Pago para:" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
+        <TextField fx:id="txtOrigem" promptText="Nome da Empresa ou Pessoa" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
 
         <Label text="Pago no:" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
-        <ComboBox fx:id="comboPagamento" prefWidth="250" GridPane.rowIndex="6" GridPane.columnIndex="1"/>
+        <ComboBox fx:id="comboPagamento" prefWidth="350" GridPane.rowIndex="6" GridPane.columnIndex="1"/>
+
+        <VBox fx:id="areaFixa" spacing="5" GridPane.rowIndex="7" GridPane.columnIndex="1">
+            <Label text="Valor Total (R$):" style="-fx-font-size: 14px;"/>
+            <TextField fx:id="txtValorFixo" promptText="0,00"/>
+        </VBox>
+
+        <HBox fx:id="areaVariavel" spacing="15" alignment="CENTER_LEFT" visible="false" managed="false" GridPane.rowIndex="7" GridPane.columnIndex="1">
+            <Label text="Quantidade:" minWidth="-Infinity"/>
+            <TextField fx:id="txtQuantidade" promptText="0" prefWidth="90"/>
+
+            <Label text="Valor Unit. (R$):" minWidth="-Infinity"/>
+            <TextField fx:id="txtValorUnitario" promptText="0,00" prefWidth="120"/>
+        </HBox>
 
     </GridPane>
 
-    <Separator/>
+    <HBox spacing="20" alignment="CENTER">
+        <Button text="Salvar" onAction="#salvar" fx:id="btnSalvar" defaultButton="true"
+                style="-fx-background-color: #2196F3; -fx-text-fill: white; -fx-pref-width: 150; -fx-padding: 10;"/>
 
-    <StackPane>
-        <VBox fx:id="areaFixa" spacing="10" visible="false">
-            <Label text="Valor Total (R$):"/>
-            <TextField fx:id="txtValorFixo"/>
-        </VBox>
-
-        <GridPane fx:id="areaVariavel" vgap="10" hgap="10" visible="false">
-            <Label text="Quantidade:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-            <TextField fx:id="txtQuantidade" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
-
-            <Label text="Valor Unitário:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-            <TextField fx:id="txtValorUnitario" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
-        </GridPane>
-    </StackPane>
-
-    <HBox spacing="10" alignment="CENTER_RIGHT">
-        <Button text="Cancelar" onAction="#cancelar" style="-fx-background-color: #ccc;"/>
-        <Button text="Salvar" onAction="#salvar" styleClass="action-button" fx:id="btnSalvar"/>
+        <Button text="Cancelar" onAction="#cancelar" cancelButton="true"
+                style="-fx-pref-width: 120; -fx-padding: 10;"/>
     </HBox>
 
 </VBox>

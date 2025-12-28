@@ -2,8 +2,8 @@ package tech.clavem303.controller;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
-import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 import org.kordamp.ikonli.javafx.FontIcon;
 import tech.clavem303.factory.ContaFactory;
@@ -14,13 +14,14 @@ import java.math.BigDecimal;
 
 public class FormularioContaController {
 
+    @FXML private Label lblTitulo;
     @FXML private ComboBox<String> comboTipo;
     @FXML private TextField txtDescricao;
     @FXML private DatePicker dateVencimento;
     @FXML private CheckBox chkPago;
     @FXML private VBox areaFixa;
     @FXML private TextField txtValorFixo;
-    @FXML private GridPane areaVariavel;
+    @FXML private HBox areaVariavel;
     @FXML private TextField txtQuantidade;
     @FXML private TextField txtValorUnitario;
     @FXML private Button btnSalvar;
@@ -34,12 +35,15 @@ public class FormularioContaController {
 
     @FXML
     public void initialize() {
+        dateVencimento.setValue(java.time.LocalDate.now());
+
         //TIPO
         comboTipo.getItems().addAll("RECEITA", "DESPESA FIXA", "DESPESA VARIÁVEL");
         comboTipo.valueProperty().addListener((obs, oldVal, newVal) -> {
             atualizarCampos(newVal);
             atualizarTextoCheckbox(newVal);
             sugerirCategoria(newVal);
+            atualizarTitulo(newVal);
         });
         comboTipo.getSelectionModel().select("DESPESA VARIÁVEL");
 
@@ -86,7 +90,7 @@ public class FormularioContaController {
         });
 
         //FORMA DE PAGAMENTO
-        comboPagamento.getItems().addAll("Débito", "Crédito", "Pix", "Vale", "Conta", "Dinheiro");
+        comboPagamento.getItems().addAll("Aguardando", "Débito", "Crédito", "Pix", "Vale", "Conta", "Dinheiro");
         comboPagamento.getSelectionModel().select("Crédito"); // Padrão
         comboPagamento.setCellFactory(lv -> new ListCell<String>() {
             @Override
@@ -116,11 +120,30 @@ public class FormularioContaController {
                 }
             }
         });
+        comboPagamento.disableProperty().bind(chkPago.selectedProperty().not());
+
+        chkPago.selectedProperty().addListener((obs, estavaPago, agoraEstaPago) -> {
+            if (!agoraEstaPago) {
+                // Se desmarcou (Não Pago), joga para "Aguardando"
+                comboPagamento.setValue("Aguardando");
+            } else {
+                if ("Aguardando".equals(comboPagamento.getValue())) {
+                    comboPagamento.setValue("Crédito");
+                }
+            }
+        });
+
+        if (!chkPago.isSelected()) {
+            comboPagamento.setValue("Aguardando");
+        } else {
+            comboPagamento.getSelectionModel().select("Crédito");
+        }
+
     }
 
     private void sugerirCategoria(String tipo) {
         if ("RECEITA".equals(tipo)) {
-            comboCategoria.getSelectionModel().select("1 - Renda");
+            comboCategoria.getSelectionModel().select("Renda");
         } else {
             comboCategoria.getSelectionModel().clearSelection();
         }
@@ -135,6 +158,9 @@ public class FormularioContaController {
         comboCategoria.setValue(conta.categoria());
         txtOrigem.setText(conta.origem());
         comboPagamento.setValue(conta.formaPagamento());
+        if (!conta.pago() && (conta.formaPagamento() == null || conta.formaPagamento().isEmpty())) {
+            comboPagamento.setValue("Aguardando");
+        }
 
         btnSalvar.setText("Atualizar");
         comboTipo.setDisable(true);
@@ -260,7 +286,7 @@ public class FormularioContaController {
         if (pagamento == null) return null;
 
         String iconeLiteral;
-        javafx.scene.paint.Color corIcone = javafx.scene.paint.Color.web("#555"); // Cinza padrão
+        javafx.scene.paint.Color corIcone = javafx.scene.paint.Color.web("#555");
 
         switch (pagamento) {
             case "Débito" -> {
@@ -287,6 +313,10 @@ public class FormularioContaController {
                 iconeLiteral = "fas-money-bill-wave"; // Cédula
                 corIcone = javafx.scene.paint.Color.web("#4CAF50"); // Verde Dinheiro
             }
+            case "Aguardando" -> { // <--- NOVO
+                iconeLiteral = "fas-hourglass-half"; // Ampulheta
+                corIcone = javafx.scene.paint.Color.web("#9E9E9E"); // Cinza claro
+            }
             default -> iconeLiteral = "fas-wallet";
         }
 
@@ -312,5 +342,19 @@ public class FormularioContaController {
         // Nesse caso, não removemos o ponto!
 
         return new BigDecimal(limpo);
+    }
+
+    private void atualizarTitulo(String tipo) {
+        if (tipo == null) return;
+
+        if ("RECEITA".equals(tipo)) {
+            lblTitulo.setText("Detalhes da Receita");
+            // Dica visual extra: Muda a cor do título para Verde se for receita
+            lblTitulo.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #4CAF50;");
+        } else {
+            lblTitulo.setText("Detalhes da Despesa");
+            // Dica visual extra: Muda a cor do título para Vermelho/Padrão se for despesa
+            lblTitulo.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #333;");
+        }
     }
 }

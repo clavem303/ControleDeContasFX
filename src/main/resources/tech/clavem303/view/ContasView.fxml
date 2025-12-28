@@ -14,7 +14,7 @@
     </padding>
 
     <HBox alignment="CENTER_LEFT" spacing="20">
-        <Label text="Minhas Finanças" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
+        <Label text="Centro de Registros" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
         <HBox HBox.hgrow="ALWAYS" />
         <Button text="Novo Registro" styleClass="action-button" onAction="#btnNovaContaAction">
             <graphic>
@@ -84,6 +84,87 @@
                         <Label text="Nenhuma despesa variável."/>
                     </placeholder>
                 </TableView>
+            </content>
+        </Tab>
+
+        <Tab text="🔍 Filtros &amp; Relatórios">
+            <content>
+                <VBox spacing="10" style="-fx-padding: 15;">
+
+                    <FlowPane hgap="15" vgap="15" alignment="CENTER_LEFT" style="-fx-background-color: #F1F3F5; -fx-padding: 15; -fx-background-radius: 5;">
+
+                        <VBox spacing="5">
+                            <Label text="Palavra-chave:"/>
+                            <TextField fx:id="filtroDescricao" promptText="Ex: Mercado" prefWidth="150"/>
+                        </VBox>
+
+                        <VBox spacing="5">
+                            <Label text="Categoria:"/>
+                            <ComboBox fx:id="filtroCategoria" promptText="Todas" prefWidth="180"/>
+                        </VBox>
+
+                        <VBox spacing="5">
+                            <Label text="De:"/>
+                            <DatePicker fx:id="filtroDataInicio" prefWidth="120"/>
+                        </VBox>
+                        <VBox spacing="5">
+                            <Label text="Até:"/>
+                            <DatePicker fx:id="filtroDataFim" prefWidth="120"/>
+                        </VBox>
+
+                        <VBox spacing="5">
+                            <Label text="Status:"/>
+                            <ComboBox fx:id="filtroStatus" prefWidth="110"/>
+                        </VBox>
+
+                        <HBox alignment="BOTTOM_LEFT" spacing="10">
+                            <Button text="Pesquisar" onAction="#acaoFiltrar"
+                                    style="-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-weight: bold;">
+                                <graphic>
+                                    <org.kordamp.ikonli.javafx.FontIcon iconLiteral="fas-search" iconColor="white"/>
+                                </graphic>
+                            </Button>
+
+                            <Button text="Limpar" onAction="#acaoLimparFiltros"
+                                    style="-fx-background-color: #E0E0E0;">
+                                <graphic>
+                                    <org.kordamp.ikonli.javafx.FontIcon iconLiteral="fas-eraser"/>
+                                </graphic>
+                            </Button>
+
+                            <Separator orientation="VERTICAL" />
+
+                            <Button text="Exportar PDF" onAction="#acaoExportarPDF"
+                                    style="-fx-background-color: #D32F2F; -fx-text-fill: white; -fx-font-weight: bold;">
+                                <graphic>
+                                    <org.kordamp.ikonli.javafx.FontIcon iconLiteral="fas-file-pdf" iconColor="white"/>
+                                </graphic>
+                                <tooltip>
+                                    <Tooltip text="Gera um relatório A4 pronto para impressão"/>
+                                </tooltip>
+                            </Button>
+                        </HBox>
+                    </FlowPane>
+
+                    <TableView fx:id="tabelaFiltro" VBox.vgrow="ALWAYS">
+                        <placeholder>
+                            <Label text="Use os filtros acima para pesquisar registros."/>
+                        </placeholder>
+                        <columns>
+                            <TableColumn fx:id="colFiltroData" text="Data" prefWidth="100"/>
+                            <TableColumn fx:id="colFiltroDesc" text="Descrição" prefWidth="250"/>
+                            <TableColumn fx:id="colFiltroCat" text="Categoria" prefWidth="150"/>
+                            <TableColumn fx:id="colFiltroTipo" text="Tipo" prefWidth="100"/> <TableColumn fx:id="colFiltroValor" text="Valor" prefWidth="120"/>
+                            <TableColumn fx:id="colFiltroStatus" text="Status" prefWidth="100"/>
+                        </columns>
+                    </TableView>
+
+                    <HBox spacing="20" alignment="CENTER_RIGHT" style="-fx-padding: 10; -fx-background-color: #E3F2FD; -fx-background-radius: 5;">
+                        <Label text="Total Encontrado:" style="-fx-font-weight: bold;"/>
+                        <Label fx:id="lblTotalFiltro" text="R$ 0,00" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #1565C0;"/>
+                    </HBox>
+
+                </VBox>
             </content>
         </Tab>
 

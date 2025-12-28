@@ -240,46 +240,84 @@ public class MainController {
         VBox container = new VBox(15);
         container.setStyle("-fx-background-color: white; -fx-background-radius: 20; -fx-padding: 20;");
 
-        // Sombra bonita no container branco
         DropShadow sombra = new DropShadow();
         sombra.setColor(Color.rgb(0,0,0,0.15));
         sombra.setRadius(15);
         sombra.setOffsetY(5);
         container.setEffect(sombra);
 
-        // Título
-        Label titulo = new Label("Pendências & Futuro");
+        Label titulo = new Label("Status de Pagamentos");
         titulo.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #555;");
         container.getChildren().add(titulo);
 
-        // ScrollPane para a lista rolar se tiver muitos itens
         javafx.scene.control.ScrollPane scroll = new javafx.scene.control.ScrollPane();
         scroll.setFitToWidth(true);
-        scroll.setStyle("-fx-background-color: transparent; -fx-background: white;"); // Remove bordas feias
-        scroll.setHbarPolicy(javafx.scene.control.ScrollPane.ScrollBarPolicy.NEVER); // Sem barra horizontal
+        scroll.setStyle("-fx-background-color: transparent; -fx-background: white;");
+        scroll.setHbarPolicy(javafx.scene.control.ScrollPane.ScrollBarPolicy.NEVER);
 
-        VBox listaItens = new VBox(10); // Espaço entre os itens da lista
+        VBox listaItens = new VBox(10);
         listaItens.setStyle("-fx-background-color: white;");
 
-        // FILTRAGEM: Pega tudo que NÃO está pago
-        var pendencias = service.getContas().stream()
+        // 1. OBTÉM TODAS AS PENDÊNCIAS ORDENADAS
+        var todasPendencias = service.getContas().stream()
                 .filter(c -> !c.pago())
-                .sorted((c1, c2) -> c1.dataVencimento().compareTo(c2.dataVencimento())) // Ordena por data (venceu primeiro aparece antes)
+                .sorted((c1, c2) -> c1.dataVencimento().compareTo(c2.dataVencimento()))
                 .toList();
 
-        if (pendencias.isEmpty()) {
-            Label lblVazio = new Label("Tudo em dia! 🎉");
-            lblVazio.setStyle("-fx-text-fill: #4CAF50; -fx-font-size: 14px;");
+        if (todasPendencias.isEmpty()) {
+            Label lblVazio = new Label("Tudo pago! Você está livre. 🎉");
+            lblVazio.setStyle("-fx-text-fill: #4CAF50; -fx-font-size: 14px; -fx-padding: 20;");
             listaItens.getChildren().add(lblVazio);
         } else {
-            for (Conta c : pendencias) {
-                HBox item = criarItemPendencia(c);
-                listaItens.getChildren().add(item);
+
+            // 2. DATAS DE CORTE
+            java.time.LocalDate hoje = java.time.LocalDate.now();
+            java.time.LocalDate fimDoMes = java.time.YearMonth.from(hoje).atEndOfMonth();
+
+            // 3. SEPARA EM DOIS GRUPOS
+            // Grupo A: Vencidos + Vencem este mês
+            var listaMesAtual = todasPendencias.stream()
+                    .filter(c -> !c.dataVencimento().isAfter(fimDoMes))
+                    .toList();
+
+            // Grupo B: Vencem do mês que vem para frente
+            var listaFuturo = todasPendencias.stream()
+                    .filter(c -> c.dataVencimento().isAfter(fimDoMes))
+                    .toList();
+
+            // 4. RENDERIZA GRUPO A (MÊS ATUAL/VENCIDOS)
+            if (!listaMesAtual.isEmpty()) {
+                Label lblSecao = new Label("Atenção / Mês Atual");
+                lblSecao.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #E91E63;");
+                listaItens.getChildren().add(lblSecao);
+
+                for (Conta c : listaMesAtual) {
+                    listaItens.getChildren().add(criarItemPendencia(c));
+                }
+            }
+
+            // 5. LINHA SEPARADORA (Só aparece se tiver itens nos dois grupos)
+            if (!listaMesAtual.isEmpty() && !listaFuturo.isEmpty()) {
+                javafx.scene.layout.Region linha = new javafx.scene.layout.Region();
+                linha.setStyle("-fx-background-color: #EEE; -fx-min-height: 2; -fx-pref-height: 2;");
+                VBox.setMargin(linha, new javafx.geometry.Insets(10, 0, 10, 0)); // Margem em cima e embaixo
+                listaItens.getChildren().add(linha);
+            }
+
+            // 6. RENDERIZA GRUPO B (FUTURO)
+            if (!listaFuturo.isEmpty()) {
+                Label lblSecao = new Label("Próximos Meses");
+                lblSecao.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #2196F3;");
+                listaItens.getChildren().add(lblSecao);
+
+                for (Conta c : listaFuturo) {
+                    listaItens.getChildren().add(criarItemPendencia(c));
+                }
             }
         }
 
         scroll.setContent(listaItens);
-        VBox.setVgrow(scroll, Priority.ALWAYS); // Scroll ocupa o resto do card
+        VBox.setVgrow(scroll, Priority.ALWAYS);
         container.getChildren().add(scroll);
 
         return container;
@@ -288,41 +326,80 @@ public class MainController {
     private HBox criarItemPendencia(Conta c) {
         HBox linha = new HBox(15);
         linha.setAlignment(Pos.CENTER_LEFT);
-        linha.setStyle("-fx-padding: 10; -fx-background-color: #F8F9FA; -fx-background-radius: 10; -fx-border-color: #EEE; -fx-border-radius: 10;");
 
-        // 1. Ícone da Categoria
+        // --- LÓGICA DE CORES E TEXTOS ---
+        boolean isVencido = c.dataVencimento().isBefore(java.time.LocalDate.now());
+        boolean isReceita = c instanceof tech.clavem303.model.Receita; // <--- Identifica se é grana entrando
+
+        String corFundo;
+        String corBorda;
+        String textoDataPrefixo;
+        String corTextoData;
+        String corIcone;
+
+        if (isReceita) {
+            // --- ESTILO RECEITA (Verde) ---
+            corFundo = "#E8F5E9"; // Verde Bem Claro
+            corBorda = "#C8E6C9"; // Verde Suave
+            corIcone = "#4CAF50"; // Verde Ícone
+            corTextoData = "#2E7D32"; // Verde Escuro (Texto)
+
+            // Texto adaptado para receita
+            if (isVencido) textoDataPrefixo = "Esperado: ";
+            else textoDataPrefixo = "Recebe: ";
+
+        } else if (isVencido) {
+            // --- ESTILO DESPESA ATRASADA (Vermelho) ---
+            corFundo = "#FFEBEE"; // Vermelho Bem Claro
+            corBorda = "#FFCDD2"; // Vermelho Suave
+            corIcone = "#F44336"; // Vermelho Ícone
+            corTextoData = "#C62828"; // Vermelho Escuro (Texto)
+            textoDataPrefixo = "Venceu: ";
+
+        } else {
+            // --- ESTILO DESPESA FUTURA (Cinza) ---
+            corFundo = "#F8F9FA"; // Cinza Padrão
+            corBorda = "#EEE";    // Borda Sutil
+            corIcone = "#FF9800"; // Laranja (Atenção moderada)
+            corTextoData = "#757575"; // Cinza Escuro
+            textoDataPrefixo = "Vence: ";
+        }
+
+        // Aplica o estilo ao container da linha
+        linha.setStyle("-fx-padding: 10; " +
+                "-fx-background-color: " + corFundo + "; " +
+                "-fx-background-radius: 10; " +
+                "-fx-border-color: " + corBorda + "; " +
+                "-fx-border-radius: 10; " +
+                "-fx-border-width: 1;");
+
+        // 1. Ícone (Agora usa a cor definida na lógica acima)
         FontIcon icone = getIconePorCategoria(c.categoria());
         if (icone == null) icone = new FontIcon("fas-exclamation-circle");
         icone.setIconSize(24);
+        icone.setIconColor(Color.web(corIcone)); // <--- Cor dinâmica
 
-        // Cor do ícone baseada no tipo (Receita = Verde, Despesa = Laranja/Vermelho)
-        if (c instanceof tech.clavem303.model.Receita) {
-            icone.setIconColor(Color.web("#4CAF50")); // Verde
-        } else {
-            // Se estiver atrasado (vencimento < hoje), fica vermelho. Senão, laranja.
-            if (c.dataVencimento().isBefore(java.time.LocalDate.now())) {
-                icone.setIconColor(Color.web("#F44336")); // Vermelho (Atrasado!)
-            } else {
-                icone.setIconColor(Color.web("#FF9800")); // Laranja (A vencer)
-            }
-        }
-
-        // 2. Textos (Descrição e Data)
+        // 2. Textos
         VBox textos = new VBox(2);
         Label lblDesc = new Label(c.descricao());
-        lblDesc.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
+        lblDesc.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #333;");
 
         java.time.format.DateTimeFormatter fmt = java.time.format.DateTimeFormatter.ofPattern("dd/MM");
-        Label lblData = new Label("Vence: " + c.dataVencimento().format(fmt));
-        lblData.setStyle("-fx-text-fill: #777; -fx-font-size: 12px;");
+        Label lblData = new Label(textoDataPrefixo + c.dataVencimento().format(fmt));
+
+        // Aplica a cor específica para o texto da data
+        lblData.setStyle("-fx-text-fill: " + corTextoData + "; -fx-font-size: 12px; -fx-font-weight: bold;");
 
         textos.getChildren().addAll(lblDesc, lblData);
-        HBox.setHgrow(textos, Priority.ALWAYS); // Texto empurra o valor para a direita
+        HBox.setHgrow(textos, Priority.ALWAYS);
 
         // 3. Valor
         NumberFormat nf = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
         Label lblValor = new Label(nf.format(c.valor()));
-        lblValor.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
+
+        // Se for Receita, deixa o valor Verde também para reforçar
+        String corValor = isReceita ? "#2E7D32" : "#333333";
+        lblValor.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: " + corValor + ";");
 
         linha.getChildren().addAll(icone, textos, lblValor);
         return linha;
