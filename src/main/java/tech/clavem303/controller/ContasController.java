@@ -14,18 +14,14 @@ import javafx.scene.layout.HBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.FileChooser;
-
 import org.kordamp.ikonli.javafx.FontIcon;
-import com.lowagie.text.*;
-import com.lowagie.text.pdf.*;
 
 import tech.clavem303.model.Conta;
 import tech.clavem303.model.ContaVariavel;
 import tech.clavem303.service.GerenciadorDeContas;
+import tech.clavem303.service.RelatorioService;
 
-import java.awt.Color; // Cuidado: Import do AWT para cores do PDF
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
@@ -573,116 +569,6 @@ public class ContasController {
         }
     }
 
-    private void criarDocumentoPDF(File file) throws IOException, DocumentException {
-        // CONFIGURAÇÃO A4 (Margens ajustadas: Esq 30, Dir 20, Topo 30, Base 40 para o rodapé)
-        Document document = new Document(PageSize.A4, 30, 20, 30, 40);
-
-        PdfWriter writer = PdfWriter.getInstance(document, new FileOutputStream(file));
-
-        // --- ADICIONA O RODAPÉ (CLAVEM303) ---
-        writer.setPageEvent(new EventoRodape());
-        // -------------------------------------
-
-        document.open();
-
-        // 1. TÍTULO (Limpo, sem o nome da marca)
-        Font fonteTitulo = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16, Color.BLACK);
-        Paragraph titulo = new Paragraph("Relatório de Movimentações Financeiras", fonteTitulo);
-        titulo.setAlignment(Element.ALIGN_CENTER);
-        document.add(titulo);
-
-        // Subtítulo com datas
-        Font fonteSub = FontFactory.getFont(FontFactory.HELVETICA, 10, Color.GRAY);
-        String periodo = "Emitido em: " + java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
-        Paragraph subtitulo = new Paragraph(periodo, fonteSub);
-        subtitulo.setAlignment(Element.ALIGN_CENTER);
-        subtitulo.setSpacingAfter(20);
-        document.add(subtitulo);
-
-        // 2. TABELA (Largura 100% da página A4)
-        PdfPTable table = new PdfPTable(5);
-        table.setWidthPercentage(100);
-        // Ajuste fino das colunas para caber na folha em pé (Portrait)
-        // Data(15%), Descrição(40%), Categoria(20%), Valor(15%), Status(10%)
-        table.setWidths(new float[]{1.5f, 4f, 2f, 1.5f, 1f});
-
-        // Cabeçalho estilizado
-        adicionarCelulaCabecalho(table, "Data");
-        adicionarCelulaCabecalho(table, "Descrição");
-        adicionarCelulaCabecalho(table, "Categoria");
-        adicionarCelulaCabecalho(table, "Valor");
-        adicionarCelulaCabecalho(table, "Status");
-
-        table.setHeaderRows(1); // Repete o cabeçalho se mudar de página
-
-        // Dados
-        ObservableList<Conta> itens = tabelaFiltro.getItems();
-        NumberFormat nf = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
-        DateTimeFormatter df = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-        BigDecimal total = BigDecimal.ZERO;
-
-        for (Conta c : itens) {
-            boolean isReceita = c instanceof tech.clavem303.model.Receita;
-            Color corTexto = isReceita ? new Color(0, 100, 0) : Color.BLACK;
-            Color corFundo = isReceita ? new Color(240, 255, 240) : null;
-
-            table.addCell(criarCelula(c.dataVencimento().format(df), corTexto, corFundo));
-
-            // --- MUDANÇA AQUI: Tudo na mesma linha com separador " - " ---
-            String textoDesc = c.descricao();
-            if (c.origem() != null && !c.origem().isEmpty()) {
-                textoDesc += " - " + c.origem(); // Ex: "Salário - Empresa X"
-            }
-            table.addCell(criarCelula(textoDesc, corTexto, corFundo));
-            // -------------------------------------------------------------
-
-            table.addCell(criarCelula(c.categoria(), corTexto, corFundo));
-            table.addCell(criarCelula(nf.format(c.valor()), corTexto, corFundo));
-
-            PdfPCell cellStatus = criarCelula(c.pago() ? "OK" : "Pendente", corTexto, corFundo);
-            cellStatus.setHorizontalAlignment(Element.ALIGN_CENTER);
-            table.addCell(cellStatus);
-
-            if (isReceita) total = total.add(c.valor());
-            else total = total.subtract(c.valor());
-        }
-
-        document.add(table);
-
-        // 3. SALDO FINAL
-        document.add(new Paragraph(" ")); // Espaço
-
-        // Tabela invisível para alinhar o total à direita
-        PdfPTable tabelaTotal = new PdfPTable(1);
-        tabelaTotal.setWidthPercentage(100);
-        PdfPCell cellTotal = new PdfPCell(new Phrase("Saldo do Período: " + nf.format(total), FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12)));
-        cellTotal.setHorizontalAlignment(Element.ALIGN_RIGHT);
-        cellTotal.setBorder(Rectangle.NO_BORDER);
-        if (total.compareTo(BigDecimal.ZERO) < 0) cellTotal.getPhrase().getFont().setColor(Color.RED);
-        else cellTotal.getPhrase().getFont().setColor(Color.BLUE);
-
-        tabelaTotal.addCell(cellTotal);
-        document.add(tabelaTotal);
-
-        document.close();
-    }
-
-    private void adicionarCelulaCabecalho(PdfPTable table, String texto) {
-        PdfPCell cell = new PdfPCell(new Phrase(texto, FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12, Color.WHITE)));
-        cell.setHorizontalAlignment(Element.ALIGN_CENTER);
-        cell.setBackgroundColor(new Color(33, 150, 243)); // Azul Clavem303
-        cell.setPadding(8);
-        table.addCell(cell);
-    }
-
-    private PdfPCell criarCelula(String texto, Color corTexto, Color corFundo) {
-        PdfPCell cell = new PdfPCell(new Phrase(texto, FontFactory.getFont(FontFactory.HELVETICA, 9, corTexto)));
-        cell.setPadding(4);
-        cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        if (corFundo != null) cell.setBackgroundColor(corFundo);
-        return cell;
-    }
-
     private void mostrarAlerta(String titulo, String msg) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(titulo);
@@ -891,7 +777,6 @@ public class ContasController {
 
     @FXML
     private void acaoExportarPDF() {
-        // 1. A escolha do arquivo TEM que ser na Thread Visual (JavaFX)
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Salvar Relatório");
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF Files", "*.pdf"));
@@ -900,37 +785,36 @@ public class ContasController {
         File file = fileChooser.showSaveDialog(tabelaFiltro.getScene().getWindow());
 
         if (file != null) {
-            // MOSTRA UM AVISO QUE ESTÁ GERANDO (Opcional, mas bom para UX)
             lblTotalFiltro.setText("Gerando PDF...");
 
-            // 2. CRIA UMA NOVA THREAD (O Pulo do Gato 🐈)
-            // Tudo que estiver aqui dentro roda em paralelo e NÃO trava a tela
+            // Instancia o serviço (como não tem estado, pode ser new aqui mesmo)
+            RelatorioService relatorioService = new RelatorioService();
+
+            // Pega a lista atual da tabela de filtro
+            var listaParaImprimir = new java.util.ArrayList<>(tabelaFiltro.getItems());
+
             new Thread(() -> {
                 try {
-                    // A. Gera o PDF (Processo Pesado)
-                    criarDocumentoPDF(file);
+                    // CHAMA O SERVIÇO AQUI
+                    relatorioService.gerarRelatorioPDF(file, listaParaImprimir);
 
-                    // B. Manda o Sistema Operacional abrir o arquivo
-                    // Se o Linux travar aqui esperando fechar, não afeta seu app!
                     if (java.awt.Desktop.isDesktopSupported()) {
                         java.awt.Desktop.getDesktop().open(file);
                     }
 
-                    // C. Sucesso? Volta para a Thread Visual para avisar
                     javafx.application.Platform.runLater(() -> {
-                        lblTotalFiltro.setText("PDF Gerado!"); // Restaura texto ou avisa
+                        lblTotalFiltro.setText("PDF Gerado!");
                         mostrarAlerta("Sucesso", "Relatório gerado e aberto com sucesso!");
                     });
 
                 } catch (Exception e) {
                     e.printStackTrace();
-                    // D. Erro? Volta para a Thread Visual para mostrar o alerta
                     javafx.application.Platform.runLater(() -> {
                         lblTotalFiltro.setText("Erro ao gerar");
                         mostrarAlerta("Erro", "Falha ao gerar PDF: " + e.getMessage());
                     });
                 }
-            }).start(); // <--- Inicia a thread paralela
+            }).start();
         }
     }
 
@@ -1064,49 +948,5 @@ public class ContasController {
                 }
             }
         });
-    }
-}
-
-// --- CLASSE INTERNA PARA O RODAPÉ (VERSÃO SEGURA) ---
-class EventoRodape extends PdfPageEventHelper {
-    Font fontRodape = FontFactory.getFont(FontFactory.HELVETICA, 8, Color.GRAY);
-    Font fontMarca = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9, new Color(33, 150, 243));
-
-    @Override
-    public void onEndPage(PdfWriter writer, Document document) {
-        // Usa try-catch para evitar que erros no rodapé travem o relatório inteiro
-        try {
-            PdfContentByte cb = writer.getDirectContent();
-
-            // Salva o estado gráfico antes de desenhar (Boas práticas)
-            cb.saveState();
-
-            // 1. LINHA SEPARADORA
-            cb.setLineWidth(0.5f);
-            cb.setColorStroke(Color.LIGHT_GRAY);
-            cb.moveTo(document.left(), document.bottom() - 10);
-            cb.lineTo(document.right(), document.bottom() - 10);
-            cb.stroke();
-
-            // 2. MARCA E PÁGINA (Usando ColumnText de forma segura)
-            // A chave aqui é usar coordenadas absolutas que não afetam o fluxo do documento
-
-            // Texto Esquerdo (Marca)
-            ColumnText.showTextAligned(cb, Element.ALIGN_LEFT,
-                    new Phrase("Clavem303 Finanças", fontMarca),
-                    document.left(), document.bottom() - 25, 0);
-
-            // Texto Direito (Página X)
-            ColumnText.showTextAligned(cb, Element.ALIGN_RIGHT,
-                    new Phrase("Página " + writer.getPageNumber(), fontRodape),
-                    document.right(), document.bottom() - 25, 0);
-
-            // Restaura o estado gráfico
-            cb.restoreState();
-
-        } catch (Exception e) {
-            // Se der erro no rodapé, apenas ignora e segue a vida (não trava o app)
-            e.printStackTrace();
-        }
     }
 }
