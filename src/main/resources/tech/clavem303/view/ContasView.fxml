@@ -5,169 +5,238 @@
 <?import javafx.scene.layout.*?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
 
-<VBox spacing="20" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+<VBox spacing="25" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="tech.clavem303.controller.ContasController"
       styleClass="content-area">
 
     <padding>
-        <Insets top="20" right="20" bottom="20" left="20"/>
+        <Insets top="30" right="30" bottom="30" left="30"/>
     </padding>
 
     <HBox alignment="CENTER_LEFT" spacing="20">
-        <Label text="Centro de Registros" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
+        <VBox>
+            <Label text="Centro de Registros" style="-fx-font-size: 26px; -fx-font-weight: 900; -fx-text-fill: #2D3436;"/>
+            <Label text="Gerencie todas as suas entradas e saídas aqui." style="-fx-text-fill: #90A4AE; -fx-font-size: 14px;"/>
+        </VBox>
+
         <HBox HBox.hgrow="ALWAYS" />
-        <Button text="Novo Registro" styleClass="action-button" onAction="#btnNovaContaAction">
+
+        <Button fx:id="btnNovaConta" text="Novo Registro" onAction="#btnNovaContaAction"
+                style="-fx-background-color: #4B39EF; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 10 20; -fx-cursor: hand; -fx-effect: dropshadow(three-pass-box, rgba(75, 57, 239, 0.3), 10, 0, 0, 4);">
             <graphic>
-                <FontIcon iconLiteral="fas-plus" iconColor="WHITE"/>
+                <FontIcon iconLiteral="fas-plus" iconColor="WHITE" iconSize="16"/>
             </graphic>
         </Button>
     </HBox>
 
-    <TabPane tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
+    <TabPane fx:id="tabPaneRegistros" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS" styleClass="modern-tab-pane">
 
         <Tab text="Receitas">
             <content>
-                <TableView fx:id="tabelaReceitas" styleClass="table-view">
-                    <columns>
-                        <TableColumn fx:id="colDescReceita" text="Fonte" prefWidth="200"/>
-                        <TableColumn fx:id="colCatReceita" text="Categoria" prefWidth="150"/>
-                        <TableColumn fx:id="colPagamentoReceita" text="Pgto" prefWidth="80"/>
-                        <TableColumn fx:id="colOrigemReceita" text="Origem" prefWidth="150"/>
-                        <TableColumn fx:id="colDataReceita" text="Data Rec." prefWidth="100"/>
-                        <TableColumn fx:id="colValorReceita" text="Valor" prefWidth="100"/>
-                        <TableColumn fx:id="colStatusReceita" text="Status" prefWidth="90"/>
-                        <TableColumn fx:id="colAcoesReceita" text="Ações" prefWidth="90"/>
-                    </columns>
-                    <placeholder>
-                        <Label text="Nenhuma receita cadastrada."/>
-                    </placeholder>
-                </TableView>
+                <VBox style="-fx-padding: 20 0 0 0;">
+                    <TableView fx:id="tabelaReceitas" styleClass="modern-table" VBox.vgrow="ALWAYS">
+                        <columnResizePolicy>
+                            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                        </columnResizePolicy>
+                        <columns>
+                            <TableColumn fx:id="colDescReceita" text="Descrição" prefWidth="25"/>
+                            <TableColumn fx:id="colCatReceita" text="Categoria" prefWidth="35"/>
+                            <TableColumn fx:id="colPagamentoReceita" text="Pagamento em" prefWidth="12"/>
+                            <TableColumn fx:id="colOrigemReceita" text="Recebido de" prefWidth="15"/>
+                            <TableColumn fx:id="colDataReceita" text="Data" prefWidth="100" minWidth="100" maxWidth="120"/>
+                            <TableColumn fx:id="colValorReceita" text="Valor" prefWidth="12"/>
+                            <TableColumn fx:id="colStatusReceita" text="Status" prefWidth="10"/>
+                            <TableColumn fx:id="colAcoesReceita" text="Ações" prefWidth="110" minWidth="110"/>
+                        </columns>
+                        <placeholder>
+                            <VBox alignment="CENTER" spacing="10">
+                                <FontIcon iconLiteral="fas-inbox" iconSize="40" iconColor="#E0E0E0"/>
+                                <Label text="Nenhuma receita recente." style="-fx-text-fill: #9E9E9E;"/>
+                            </VBox>
+                        </placeholder>
+                    </TableView>
+                </VBox>
             </content>
         </Tab>
 
-        <Tab text="Contas Fixas">
+        <Tab text="Despesas Fixas">
             <content>
-                <TableView fx:id="tabelaFixas" styleClass="table-view">
-                    <columns>
-                        <TableColumn fx:id="colDescricaoFixa" text="Descrição" prefWidth="250"/>
-                        <TableColumn fx:id="colCatFixa" text="Categoria" prefWidth="150"/>
-                        <TableColumn fx:id="colPagamentoFixa" text="Pgto" prefWidth="80"/>
-                        <TableColumn fx:id="colOrigemFixa" text="Origem" prefWidth="150"/>
-                        <TableColumn fx:id="colVencimentoFixa" text="Vencimento" prefWidth="120"/>
-                        <TableColumn fx:id="colValorFixa" text="Valor (R$)" prefWidth="120"/>
-                        <TableColumn fx:id="colStatusFixa" text="Status" prefWidth="100"/>
-                        <TableColumn fx:id="colAcoesFixa" text="Ações" prefWidth="100"/>
-                    </columns>
-                    <placeholder>
-                        <Label text="Nenhuma conta fixa cadastrada."/>
-                    </placeholder>
-                </TableView>
+                <VBox style="-fx-padding: 20 0 0 0;">
+                    <TableView fx:id="tabelaFixas" styleClass="modern-table" VBox.vgrow="ALWAYS">
+                        <columnResizePolicy>
+                            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                        </columnResizePolicy>
+                        <columns>
+                            <TableColumn fx:id="colDescricaoFixa" text="Descrição" prefWidth="25"/>
+                            <TableColumn fx:id="colCatFixa" text="Categoria" prefWidth="35"/>
+                            <TableColumn fx:id="colPagamentoFixa" text="Pago no" prefWidth="12"/>
+                            <TableColumn fx:id="colOrigemFixa" text="Pago para" prefWidth="15"/>
+                            <TableColumn fx:id="colVencimentoFixa" text="Vencimento" prefWidth="100" minWidth="100" maxWidth="120"/>
+                            <TableColumn fx:id="colValorFixa" text="Valor (R$)" prefWidth="12"/>
+                            <TableColumn fx:id="colStatusFixa" text="Status" prefWidth="10"/>
+                            <TableColumn fx:id="colAcoesFixa" text="Ações" prefWidth="110" minWidth="110"/>
+                        </columns>
+                        <placeholder>
+                            <VBox alignment="CENTER" spacing="10">
+                                <FontIcon iconLiteral="fas-file-invoice" iconSize="40" iconColor="#E0E0E0"/>
+                                <Label text="Nenhuma conta fixa recente." style="-fx-text-fill: #9E9E9E;"/>
+                            </VBox>
+                        </placeholder>
+                    </TableView>
+                </VBox>
             </content>
         </Tab>
 
-        <Tab text="Contas Variáveis">
+        <Tab text="Despesas Variáveis">
             <content>
-                <TableView fx:id="tabelaVariaveis" styleClass="table-view">
-                    <columns>
-                        <TableColumn fx:id="colDescricaoVar" text="Descrição" prefWidth="200"/>
-                        <TableColumn fx:id="colCatVar" text="Categoria" prefWidth="150"/>
-                        <TableColumn fx:id="colPagamentoVar" text="Pgto" prefWidth="80"/>
-                        <TableColumn fx:id="colOrigemVar" text="Origem" prefWidth="150"/>
-                        <TableColumn fx:id="colQtdVar" text="Qtd" prefWidth="60"/>
-                        <TableColumn fx:id="colUnitarioVar" text="V. Unit." prefWidth="80"/>
-                        <TableColumn fx:id="colVencimentoVar" text="Data Compra" prefWidth="110"/>
-                        <TableColumn fx:id="colValorVar" text="Total (R$)" prefWidth="100"/>
-                        <TableColumn fx:id="colStatusVar" text="Status" prefWidth="100"/>
-                        <TableColumn fx:id="colAcoesVar" text="Ações" prefWidth="100"/>
-                    </columns>
-                    <placeholder>
-                        <Label text="Nenhuma despesa variável."/>
-                    </placeholder>
-                </TableView>
+                <VBox style="-fx-padding: 20 0 0 0;">
+                    <TableView fx:id="tabelaVariaveis" styleClass="modern-table" VBox.vgrow="ALWAYS">
+                        <columnResizePolicy>
+                            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                        </columnResizePolicy>
+                        <columns>
+                            <TableColumn fx:id="colDescricaoVar" text="Descrição" prefWidth="22"/>
+                            <TableColumn fx:id="colCatVar" text="Categoria" prefWidth="35"/>
+                            <TableColumn fx:id="colPagamentoVar" text="Pago no" prefWidth="10"/>
+                            <TableColumn fx:id="colOrigemVar" text="Pago para" prefWidth="12"/>
+                            <TableColumn fx:id="colQtdVar" text="Qtd" prefWidth="4"/>
+                            <TableColumn fx:id="colUnitarioVar" text="V. Unit." prefWidth="7"/>
+                            <TableColumn fx:id="colVencimentoVar" text="Data" prefWidth="100" minWidth="100" maxWidth="120"/>
+                            <TableColumn fx:id="colValorVar" text="Total" prefWidth="9"/>
+                            <TableColumn fx:id="colStatusVar" text="Status" prefWidth="8"/>
+                            <TableColumn fx:id="colAcoesVar" text="Ações" prefWidth="110" minWidth="110"/>
+                        </columns>
+                        <placeholder>
+                            <VBox alignment="CENTER" spacing="10">
+                                <FontIcon iconLiteral="fas-shopping-cart" iconSize="40" iconColor="#E0E0E0"/>
+                                <Label text="Nenhuma despesa variável recente." style="-fx-text-fill: #9E9E9E;"/>
+                            </VBox>
+                        </placeholder>
+                    </TableView>
+                </VBox>
             </content>
         </Tab>
 
-        <Tab text="🔍 Filtros &amp; Relatórios">
+        <Tab text="Cartões de Crédito">
             <content>
-                <VBox spacing="10" style="-fx-padding: 15;">
+                <VBox spacing="15" style="-fx-padding: 20 0 0 0;">
+                    <HBox spacing="15" alignment="CENTER_LEFT" style="-fx-background-color: #FFF3E0; -fx-padding: 15; -fx-background-radius: 10; -fx-border-color: #FFE0B2; -fx-border-radius: 10;">
+                        <Label text="Gerenciamento de Faturas" style="-fx-font-weight: bold; -fx-text-fill: #E65100; -fx-font-size: 14px;"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Button text="Pagar Fatura Fechada" onAction="#acaoPagarFatura"
+                                style="-fx-background-color: #E65100; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 5, 0, 0, 1);">
+                            <graphic>
+                                <FontIcon iconLiteral="fas-file-invoice-dollar" iconColor="WHITE"/>
+                            </graphic>
+                        </Button>
+                    </HBox>
 
-                    <FlowPane hgap="15" vgap="15" alignment="CENTER_LEFT" style="-fx-background-color: #F1F3F5; -fx-padding: 15; -fx-background-radius: 5;">
+                    <TableView fx:id="tabelaCartoes" styleClass="modern-table" VBox.vgrow="ALWAYS">
+                        <columnResizePolicy>
+                            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                        </columnResizePolicy>
+                        <columns>
+                            <TableColumn fx:id="colCartaoNome" text="Cartão" prefWidth="15"/>
+                            <TableColumn fx:id="colCartaoDesc" text="Descrição" prefWidth="25"/>
+                            <TableColumn fx:id="colCartaoParcela" text="Parc." prefWidth="8"/>
+                            <TableColumn fx:id="colCartaoCat" text="Categoria" prefWidth="15"/>
+                            <TableColumn fx:id="colCartaoVencimento" text="Venc. Fatura" prefWidth="100" minWidth="100" maxWidth="120"/>
+                            <TableColumn fx:id="colCartaoValor" text="Valor Parc." prefWidth="12"/>
+                            <TableColumn fx:id="colCartaoStatus" text="Status" prefWidth="10"/>
+                            <TableColumn fx:id="colCartaoAcoes" text="Ações" prefWidth="110" minWidth="110"/>
+                        </columns>
+                        <placeholder>
+                            <VBox alignment="CENTER" spacing="10">
+                                <FontIcon iconLiteral="fas-credit-card" iconSize="40" iconColor="#E0E0E0"/>
+                                <Label text="Nenhuma compra recente." style="-fx-text-fill: #9E9E9E;"/>
+                            </VBox>
+                        </placeholder>
+                    </TableView>
+                </VBox>
+            </content>
+        </Tab>
+
+        <Tab text="🔍 Pesquisa Avançada">
+            <content>
+                <VBox spacing="15" style="-fx-padding: 20 0 0 0;">
+                    <FlowPane hgap="20" vgap="15" alignment="CENTER_LEFT"
+                              style="-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 10, 0, 0, 5);">
 
                         <VBox spacing="5">
-                            <Label text="Palavra-chave:"/>
-                            <TextField fx:id="filtroDescricao" promptText="Ex: Mercado" prefWidth="150"/>
+                            <Label text="Palavra-chave:" style="-fx-font-weight: bold; -fx-text-fill: #666;"/>
+                            <TextField fx:id="filtroDescricao" promptText="Ex: Mercado" prefWidth="180" style="-fx-background-radius: 5;"/>
                         </VBox>
 
                         <VBox spacing="5">
-                            <Label text="Categoria:"/>
-                            <ComboBox fx:id="filtroCategoria" promptText="Todas" prefWidth="180"/>
+                            <Label text="Categoria:" style="-fx-font-weight: bold; -fx-text-fill: #666;"/>
+                            <ComboBox fx:id="filtroCategoria" promptText="Todas" prefWidth="180" style="-fx-background-radius: 5;"/>
                         </VBox>
 
                         <VBox spacing="5">
-                            <Label text="De:"/>
-                            <DatePicker fx:id="filtroDataInicio" prefWidth="120"/>
-                        </VBox>
-                        <VBox spacing="5">
-                            <Label text="Até:"/>
-                            <DatePicker fx:id="filtroDataFim" prefWidth="120"/>
-                        </VBox>
-
-                        <VBox spacing="5">
-                            <Label text="Status:"/>
-                            <ComboBox fx:id="filtroStatus" prefWidth="110"/>
+                            <Label text="Período (De - Até):" style="-fx-font-weight: bold; -fx-text-fill: #666;"/>
+                            <HBox spacing="10">
+                                <DatePicker fx:id="filtroDataInicio" prefWidth="130" style="-fx-background-radius: 5;"/>
+                                <DatePicker fx:id="filtroDataFim" prefWidth="130" style="-fx-background-radius: 5;"/>
+                            </HBox>
                         </VBox>
 
-                        <HBox alignment="BOTTOM_LEFT" spacing="10">
+                        <VBox spacing="5">
+                            <Label text="Status:" style="-fx-font-weight: bold; -fx-text-fill: #666;"/>
+                            <ComboBox fx:id="filtroStatus" prefWidth="130" style="-fx-background-radius: 5;"/>
+                        </VBox>
+
+                        <HBox alignment="BOTTOM_LEFT" spacing="15" style="-fx-padding: 0 0 0 20;">
                             <Button text="Pesquisar" onAction="#acaoFiltrar"
-                                    style="-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-weight: bold;">
+                                    style="-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-cursor: hand;">
                                 <graphic>
-                                    <org.kordamp.ikonli.javafx.FontIcon iconLiteral="fas-search" iconColor="white"/>
+                                    <FontIcon iconLiteral="fas-search" iconColor="white"/>
                                 </graphic>
                             </Button>
 
                             <Button text="Limpar" onAction="#acaoLimparFiltros"
-                                    style="-fx-background-color: #E0E0E0;">
+                                    style="-fx-background-color: #ECEFF1; -fx-text-fill: #555; -fx-background-radius: 5; -fx-cursor: hand;">
                                 <graphic>
-                                    <org.kordamp.ikonli.javafx.FontIcon iconLiteral="fas-eraser"/>
+                                    <FontIcon iconLiteral="fas-eraser"/>
                                 </graphic>
                             </Button>
 
                             <Separator orientation="VERTICAL" />
 
-                            <Button text="Exportar PDF" onAction="#acaoExportarPDF"
-                                    style="-fx-background-color: #D32F2F; -fx-text-fill: white; -fx-font-weight: bold;">
+                            <Button text="PDF" onAction="#acaoExportarPDF"
+                                    style="-fx-background-color: #FF5252; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-cursor: hand;">
                                 <graphic>
-                                    <org.kordamp.ikonli.javafx.FontIcon iconLiteral="fas-file-pdf" iconColor="white"/>
+                                    <FontIcon iconLiteral="fas-file-pdf" iconColor="white"/>
                                 </graphic>
-                                <tooltip>
-                                    <Tooltip text="Gera um relatório A4 pronto para impressão"/>
-                                </tooltip>
                             </Button>
                         </HBox>
                     </FlowPane>
 
-                    <TableView fx:id="tabelaFiltro" VBox.vgrow="ALWAYS">
+                    <TableView fx:id="tabelaFiltro" VBox.vgrow="ALWAYS" styleClass="modern-table">
+                        <columnResizePolicy>
+                            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                        </columnResizePolicy>
                         <placeholder>
-                            <Label text="Use os filtros acima para pesquisar registros."/>
+                            <VBox alignment="CENTER" spacing="10">
+                                <FontIcon iconLiteral="fas-search" iconSize="40" iconColor="#E0E0E0"/>
+                                <Label text="Use os filtros acima para ver registros antigos." style="-fx-text-fill: #9E9E9E;"/>
+                            </VBox>
                         </placeholder>
                         <columns>
-                            <TableColumn fx:id="colFiltroData" text="Data" prefWidth="100"/>
-                            <TableColumn fx:id="colFiltroDesc" text="Descrição" prefWidth="250"/>
-                            <TableColumn fx:id="colFiltroCat" text="Categoria" prefWidth="150"/>
-                            <TableColumn fx:id="colFiltroTipo" text="Tipo" prefWidth="100"/> <TableColumn fx:id="colFiltroValor" text="Valor" prefWidth="120"/>
-                            <TableColumn fx:id="colFiltroStatus" text="Status" prefWidth="100"/>
+                            <TableColumn fx:id="colFiltroData" text="Data" prefWidth="100" minWidth="100" maxWidth="120"/>
+                            <TableColumn fx:id="colFiltroDesc" text="Descrição" prefWidth="25"/>
+                            <TableColumn fx:id="colFiltroCat" text="Categoria" prefWidth="20"/>
+                            <TableColumn fx:id="colFiltroTipo" text="Tipo" prefWidth="10"/>
+                            <TableColumn fx:id="colFiltroValor" text="Valor" prefWidth="12"/>
+                            <TableColumn fx:id="colFiltroStatus" text="Status" prefWidth="10"/>
                         </columns>
                     </TableView>
 
-                    <HBox spacing="20" alignment="CENTER_RIGHT" style="-fx-padding: 10; -fx-background-color: #E3F2FD; -fx-background-radius: 5;">
-                        <Label text="Total Encontrado:" style="-fx-font-weight: bold;"/>
-                        <Label fx:id="lblTotalFiltro" text="R$ 0,00" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #1565C0;"/>
+                    <HBox spacing="20" alignment="CENTER_RIGHT" style="-fx-padding: 15; -fx-background-color: white; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 5, 0, 0, 5);">
+                        <Label text="Total Encontrado:" style="-fx-font-weight: bold; -fx-text-fill: #555;"/>
+                        <Label fx:id="lblTotalFiltro" text="R$ 0,00" style="-fx-font-size: 20px; -fx-font-weight: 900; -fx-text-fill: #4B39EF;"/>
                     </HBox>
-
                 </VBox>
             </content>
         </Tab>
-
     </TabPane>
-
 </VBox>

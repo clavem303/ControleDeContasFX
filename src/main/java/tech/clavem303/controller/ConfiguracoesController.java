@@ -1,25 +1,107 @@
 package tech.clavem303.controller;
 
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
+import javafx.scene.control.*;
 import javafx.stage.FileChooser;
+import org.kordamp.ikonli.javafx.FontIcon;
+import tech.clavem303.model.CartaoConfig;
 import tech.clavem303.service.GerenciadorDeContas;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.util.Base64;
 
 public class ConfiguracoesController {
 
+    // --- Componentes da UI (Cartões) ---
+    @FXML private TextField txtNomeCartao;
+    @FXML private Spinner<Integer> spinDiaVencimento;
+    @FXML private ListView<CartaoConfig> listaCartoes;
+
     private GerenciadorDeContas service;
 
     public void setService(GerenciadorDeContas service) {
         this.service = service;
+        carregarListaCartoes();
     }
+
+    @FXML
+    public void initialize() {
+        // 1. Configura o Spinner (Dias 1 a 31)
+        SpinnerValueFactory<Integer> valueFactory = new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 31, 10);
+        spinDiaVencimento.setValueFactory(valueFactory);
+
+        // 2. Configura a Lista para mostrar Ícone + Texto
+        listaCartoes.setCellFactory(param -> new ListCell<>() {
+            @Override
+            protected void updateItem(CartaoConfig item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setGraphic(null);
+                } else {
+                    setText(item.nome() + " (Vence dia " + item.diaVencimento() + ")");
+                    FontIcon icon = new FontIcon("fas-credit-card");
+                    icon.setIconColor(javafx.scene.paint.Color.web("#555"));
+                    setGraphic(icon);
+                    setGraphicTextGap(10);
+                }
+            }
+        });
+    }
+
+    // --- LÓGICA DE CARTÕES ---
+
+    private void carregarListaCartoes() {
+        if (service != null) {
+            listaCartoes.setItems(service.getCartoesConfig());
+        }
+    }
+
+    @FXML
+    private void acaoSalvarCartao() {
+        String nome = txtNomeCartao.getText().trim();
+        Integer dia = spinDiaVencimento.getValue();
+
+        if (nome.isEmpty()) {
+            mostrarAlerta("Erro", "O nome do cartão não pode ser vazio.", Alert.AlertType.WARNING);
+            return;
+        }
+
+        // Verifica duplicidade pelo nome
+        boolean existe = service.getCartoesConfig().stream()
+                .anyMatch(c -> c.nome().equalsIgnoreCase(nome));
+
+        if (existe) {
+            mostrarAlerta("Erro", "Já existe um cartão com este nome.", Alert.AlertType.WARNING);
+            return;
+        }
+
+        service.adicionarCartaoConfig(nome, dia);
+        txtNomeCartao.clear();
+        mostrarAlerta("Sucesso", "Cartão adicionado!", Alert.AlertType.INFORMATION);
+    }
+
+    @FXML
+    private void acaoRemoverCartao() {
+        CartaoConfig selecionado = listaCartoes.getSelectionModel().getSelectedItem();
+        if (selecionado == null) {
+            mostrarAlerta("Atenção", "Selecione um cartão para remover.", Alert.AlertType.WARNING);
+            return;
+        }
+
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
+                "Deseja remover o cartão '" + selecionado.nome() + "'?\n(Faturas antigas não serão apagadas)",
+                ButtonType.YES, ButtonType.NO);
+
+        if (confirm.showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
+            service.removerCartaoConfig(selecionado);
+        }
+    }
+
+    // --- LÓGICA DE BACKUP (Mantida conforme solicitado) ---
 
     @FXML
     private void fazerBackup() {
@@ -78,6 +160,8 @@ public class ConfiguracoesController {
                 // 4. Força o sistema a reler o arquivo
                 if (service != null) {
                     service.recarregarDados();
+                    // Opcional: Recarregar a lista de cartões caso o backup tenha trazido cartões diferentes
+                    carregarListaCartoes();
                 }
 
                 mostrarAlerta("Restaurado", "Dados recuperados com sucesso!", Alert.AlertType.INFORMATION);
@@ -90,6 +174,7 @@ public class ConfiguracoesController {
         }
     }
 
+    // Helper genérico para alertas
     private void mostrarAlerta(String titulo, String msg, Alert.AlertType tipo) {
         Alert alert = new Alert(tipo);
         alert.setTitle(titulo);

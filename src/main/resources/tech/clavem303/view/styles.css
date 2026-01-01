@@ -161,3 +161,123 @@
     -fx-border-color: #f5c6cb;
     -fx-border-radius: 12;
 }
+
+/* --- DASHBOARD ULTRA MODERNO --- */
+
+/* Remove qualquer borda ou efeito 3D das fatias */
+.chart-pie {
+    -fx-border-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-width: 0;
+}
+
+/* Esconde labels padrão */
+.chart-pie-label, .chart-pie-label-line, .chart-legend {
+    -fx-visibility: hidden;
+}
+
+/* Barra de Progresso "Cápsula" */
+.progress-bar-custom .track {
+    -fx-background-color: #ECEFF1; /* Cinza gelo fundo */
+    -fx-background-radius: 20;     /* Totalmente redondo */
+}
+
+.progress-bar-custom .bar {
+    -fx-background-radius: 20;
+    -fx-background-insets: 0;
+    -fx-effect: null; /* Remove sombras padrão para ficar Flat */
+}
+
+/* --- TELA DE REGISTROS MODERNA --- */
+
+/* 1. ESTILO DAS ABAS (TabPane) */
+.modern-tab-pane .tab-header-area .tab-header-background {
+    -fx-background-color: transparent; /* Remove o fundo cinza feio atrás das abas */
+}
+
+.modern-tab-pane .tab {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 10 20;
+    -fx-border-color: transparent;
+    -fx-cursor: hand;
+}
+
+.modern-tab-pane .tab:selected {
+    -fx-background-color: transparent;
+    -fx-border-color: -fx-primary-color; /* Azul do sistema */
+    -fx-border-width: 0 0 3 0; /* Apenas uma linha grossa embaixo */
+}
+
+.modern-tab-pane .tab-label {
+    -fx-text-fill: #90A4AE; /* Cinza claro quando não selecionado */
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+}
+
+.modern-tab-pane .tab:selected .tab-label {
+    -fx-text-fill: -fx-primary-color; /* Azul quando selecionado */
+}
+
+/* 2. ESTILO DA TABELA (TableView) */
+.modern-table {
+    -fx-background-color: white;
+    -fx-background-radius: 10;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 10, 0, 0, 5); /* Sombra suave */
+    -fx-padding: 10;
+    -fx-border-color: transparent;
+}
+
+/* Cabeçalho da Tabela */
+.modern-table .column-header-background {
+    -fx-background-color: white;
+    -fx-border-width: 0 0 1 0; /* Linha fina separando cabeçalho */
+    -fx-border-color: #F0F0F0;
+}
+
+.modern-table .column-header {
+    -fx-background-color: transparent;
+    -fx-size: 45px; /* Altura do cabeçalho */
+    -fx-border-color: transparent;
+}
+
+.modern-table .column-header .label {
+    -fx-text-fill: #546E7A; /* Cinza azulado */
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+    -fx-alignment: CENTER;
+}
+
+/* Linhas da Tabela */
+.modern-table .table-row-cell {
+    -fx-background-color: white;
+    -fx-border-color: transparent;
+    -fx-cell-size: 45px; /* Linhas mais altas (mais respiro) */
+}
+
+.modern-table .table-row-cell:odd {
+    -fx-background-color: #FAFAFA; /* Zebra striping bem sutil */
+}
+
+.modern-table .table-row-cell:hover {
+    -fx-background-color: #F5F5F5; /* Highlight ao passar o mouse */
+}
+
+.modern-table .table-row-cell:selected {
+    -fx-background-color: #E3F2FD; /* Azul bem clarinho na seleção */
+    -fx-background-insets: 0;
+}
+
+/* Texto dentro das células */
+.modern-table .table-cell {
+    -fx-border-color: transparent; /* Remove linhas verticais */
+    -fx-text-fill: #37474F;
+    -fx-alignment: CENTER;
+    -fx-padding: 0 10 0 10;
+}
+
+/* Remove a barra de rolagem feia se não for necessária */
+.modern-table .scroll-bar:horizontal .track,
+.modern-table .scroll-bar:vertical .track{
+    -fx-background-color: transparent;
+}

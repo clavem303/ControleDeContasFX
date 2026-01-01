@@ -2,7 +2,7 @@
 
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.geometry.Insets?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
 
 <VBox spacing="20" alignment="CENTER" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="tech.clavem303.controller.FormularioContaController"
@@ -17,39 +17,67 @@
             <ColumnConstraints hgrow="ALWAYS"/>
         </columnConstraints>
 
-        <Label text="Tipo:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-        <ComboBox fx:id="comboTipo" prefWidth="350" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+        <Label text="Descrição:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+        <TextField fx:id="txtDescricao" promptText="Ex: Salário, Mercado..." prefWidth="350" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
 
-        <Label text="Descrição:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-        <TextField fx:id="txtDescricao" promptText="Ex: Supermercado" prefWidth="350" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+        <Label fx:id="lblData" text="Data:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
 
-        <Label text="Data:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
-        <DatePicker fx:id="dateVencimento" prefWidth="350" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+        <StackPane GridPane.rowIndex="1" GridPane.columnIndex="1" alignment="CENTER_LEFT">
+            <DatePicker fx:id="dateVencimento" prefWidth="350"/>
+            <ComboBox fx:id="comboMesReferencia" prefWidth="350" visible="false" managed="false" promptText="Selecione o Mês da Fatura"/>
+        </StackPane>
 
-        <Label text="Status:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
-        <CheckBox fx:id="chkPago" text="Marcar como Pago" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+        <Label text="Status:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+        <CheckBox fx:id="chkPago" text="Marcar como Pago" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
 
-        <Label text="Categoria:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
-        <ComboBox fx:id="comboCategoria" prefWidth="350" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+        <Label text="Categoria:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+        <ComboBox fx:id="comboCategoria" prefWidth="350" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
 
-        <Label text="Recebido de/Pago para:" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
-        <TextField fx:id="txtOrigem" promptText="Nome da Empresa ou Pessoa" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
+        <Label text="Local / Origem:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+        <TextField fx:id="txtOrigem" promptText="Nome da Loja / Pagador" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
 
-        <Label text="Pago no:" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
-        <ComboBox fx:id="comboPagamento" prefWidth="350" GridPane.rowIndex="6" GridPane.columnIndex="1"/>
+        <Label fx:id="lblPagamento" text="Pago no:" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
+        <ComboBox fx:id="comboPagamento" prefWidth="350" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
 
-        <VBox fx:id="areaFixa" spacing="5" GridPane.rowIndex="7" GridPane.columnIndex="1">
+        <VBox fx:id="areaFixa" spacing="5" GridPane.rowIndex="6" GridPane.columnIndex="1">
             <Label text="Valor Total (R$):" style="-fx-font-size: 14px;"/>
             <TextField fx:id="txtValorFixo" promptText="0,00"/>
         </VBox>
 
-        <HBox fx:id="areaVariavel" spacing="15" alignment="CENTER_LEFT" visible="false" managed="false" GridPane.rowIndex="7" GridPane.columnIndex="1">
-            <Label text="Quantidade:" minWidth="-Infinity"/>
-            <TextField fx:id="txtQuantidade" promptText="0" prefWidth="90"/>
+        <HBox fx:id="areaVariavel" spacing="15" alignment="CENTER_LEFT" visible="false" managed="false" GridPane.rowIndex="6" GridPane.columnIndex="1">
+            <Label text="Qtd:" minWidth="-Infinity"/>
+            <TextField fx:id="txtQuantidade" promptText="1" prefWidth="90"/>
 
             <Label text="Valor Unit. (R$):" minWidth="-Infinity"/>
             <TextField fx:id="txtValorUnitario" promptText="0,00" prefWidth="120"/>
         </HBox>
+
+        <VBox fx:id="areaCartao" spacing="10" visible="false" managed="false" GridPane.rowIndex="6" GridPane.columnIndex="1"
+              style="-fx-background-color: #FFF3E0; -fx-padding: 10; -fx-background-radius: 5; -fx-border-color: #FFB74D; -fx-border-radius: 5;">
+
+            <Label text="Detalhes do Parcelamento" style="-fx-font-weight: bold; -fx-text-fill: #E65100;"/>
+
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Label text="Cartão:" minWidth="110"/>
+                <ComboBox fx:id="comboCartaoSelecionado" prefWidth="200" promptText="Escolha o cartão"/>
+            </HBox>
+
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Label text="Data da Compra:" minWidth="110"/>
+                <DatePicker fx:id="dateCompraCartao" prefWidth="140"/>
+            </HBox>
+
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Label text="Total da Compra:" minWidth="110"/>
+                <TextField fx:id="txtTotalCartao" promptText="0,00" prefWidth="120"/>
+            </HBox>
+
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Label text="Nº Parcelas:" minWidth="110"/>
+                <TextField fx:id="txtNumParcelas" promptText="Ex: 10" prefWidth="60"/>
+                <Label text="x (mensais)" style="-fx-font-size: 12px; -fx-text-fill: #666;"/>
+            </HBox>
+        </VBox>
 
     </GridPane>
 
