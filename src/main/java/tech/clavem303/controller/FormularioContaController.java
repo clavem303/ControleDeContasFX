@@ -10,6 +10,7 @@ import org.kordamp.ikonli.javafx.FontIcon;
 import tech.clavem303.factory.ContaFactory;
 import tech.clavem303.model.*;
 import tech.clavem303.service.GerenciadorDeContas;
+import tech.clavem303.util.ValidadorFX;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -65,6 +66,16 @@ public class FormularioContaController {
     @FXML public void initialize() {
         dateVencimento.setValue(LocalDate.now());
         dateCompraCartao.setValue(LocalDate.now());
+
+        // --- VALIDAÇÃO DE CAMPOS (NOVO) ---
+        // Campos que aceitam decimais (R$ ou Kg)
+        ValidadorFX.configurarDecimal(txtValorFixo);
+        ValidadorFX.configurarDecimal(txtValorUnitario);
+        ValidadorFX.configurarDecimal(txtQuantidade);
+        ValidadorFX.configurarDecimal(txtTotalCartao);
+
+        // Campos apenas inteiros
+        ValidadorFX.configurarInteiro(txtNumParcelas);
 
         // 1. Configura Mês (Cartão)
         configurarComboMeses();

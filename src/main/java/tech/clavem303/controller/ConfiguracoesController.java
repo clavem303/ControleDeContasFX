@@ -6,6 +6,7 @@ import javafx.stage.FileChooser;
 import org.kordamp.ikonli.javafx.FontIcon;
 import tech.clavem303.model.CartaoConfig;
 import tech.clavem303.service.GerenciadorDeContas;
+import tech.clavem303.util.ValidadorFX;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,6 +33,9 @@ public class ConfiguracoesController {
         // 1. Configura o Spinner (Dias 1 a 31)
         SpinnerValueFactory<Integer> valueFactory = new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 31, 10);
         spinDiaVencimento.setValueFactory(valueFactory);
+
+        // Limita o nome do cartão a 20 caracteres para não quebrar a UI
+        ValidadorFX.limitarTamanho(txtNomeCartao, 20);
 
         // 2. Configura a Lista para mostrar Ícone + Texto
         listaCartoes.setCellFactory(param -> new ListCell<>() {
