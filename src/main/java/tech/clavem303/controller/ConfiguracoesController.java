@@ -21,11 +21,18 @@ public class ConfiguracoesController {
     @FXML private Spinner<Integer> spinDiaVencimento;
     @FXML private ListView<CartaoConfig> listaCartoes;
 
+    // Componentes de Categoria
+    @FXML private TextField txtNovaCatDespesa;
+    @FXML private ListView<String> listaCatDespesas;
+    @FXML private TextField txtNovaCatReceita;
+    @FXML private ListView<String> listaCatReceitas;
+
     private GerenciadorDeContas service;
 
     public void setService(GerenciadorDeContas service) {
         this.service = service;
         carregarListaCartoes();
+        carregarListasCategorias();
     }
 
     @FXML
@@ -61,6 +68,47 @@ public class ConfiguracoesController {
     private void carregarListaCartoes() {
         if (service != null) {
             listaCartoes.setItems(service.getCartoesConfig());
+        }
+    }
+
+    private void carregarListasCategorias() {
+        if (service != null) {
+            listaCatDespesas.setItems(service.getCategoriasDespesa());
+            listaCatReceitas.setItems(service.getCategoriasReceita());
+        }
+    }
+
+    @FXML
+    private void addCatDespesa() {
+        String nova = txtNovaCatDespesa.getText().trim();
+        if (!nova.isEmpty()) {
+            service.adicionarCategoriaDespesa(nova);
+            txtNovaCatDespesa.clear();
+        }
+    }
+
+    @FXML
+    private void delCatDespesa() {
+        String selecionada = listaCatDespesas.getSelectionModel().getSelectedItem();
+        if (selecionada != null) {
+            service.removerCategoriaDespesa(selecionada);
+        }
+    }
+
+    @FXML
+    private void addCatReceita() {
+        String nova = txtNovaCatReceita.getText().trim();
+        if (!nova.isEmpty()) {
+            service.adicionarCategoriaReceita(nova);
+            txtNovaCatReceita.clear();
+        }
+    }
+
+    @FXML
+    private void delCatReceita() {
+        String selecionada = listaCatReceitas.getSelectionModel().getSelectedItem();
+        if (selecionada != null) {
+            service.removerCategoriaReceita(selecionada);
         }
     }
 

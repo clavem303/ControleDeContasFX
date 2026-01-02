@@ -49,6 +49,36 @@
             </HBox>
         </VBox>
 
+        <VBox spacing="20" maxWidth="750" style="-fx-background-color: #F8F9FA; -fx-padding: 30; -fx-background-radius: 10; -fx-border-color: #DEE2E6; -fx-border-radius: 10;">
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <FontIcon iconLiteral="fas-tags" iconSize="20" iconColor="#455A64"/>
+                <Label text="Editor de Categorias" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #455A64;"/>
+            </HBox>
+
+            <TabPane styleClass="modern-tab-pane">
+                <Tab text="Despesas" closable="false">
+                    <VBox spacing="15" style="-fx-padding: 15 0 0 0;">
+                        <HBox spacing="10">
+                            <TextField fx:id="txtNovaCatDespesa" promptText="Nova Categoria de Despesa" HBox.hgrow="ALWAYS" style="-fx-background-radius: 5;"/>
+                            <Button text="Adicionar" onAction="#addCatDespesa" style="-fx-background-color: #4B39EF; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-cursor: hand;"/>
+                        </HBox>
+                        <ListView fx:id="listaCatDespesas" prefHeight="200" style="-fx-background-radius: 5; -fx-border-color: #DDD;"/>
+                        <Button text="Remover Selecionada" onAction="#delCatDespesa" style="-fx-background-color: #FFEBEE; -fx-text-fill: #C62828; -fx-font-weight: bold; -fx-border-color: #FFCDD2; -fx-background-radius: 5; -fx-cursor: hand;"/>
+                    </VBox>
+                </Tab>
+                <Tab text="Receitas" closable="false">
+                    <VBox spacing="15" style="-fx-padding: 15 0 0 0;">
+                        <HBox spacing="10">
+                            <TextField fx:id="txtNovaCatReceita" promptText="Nova Categoria de Receita" HBox.hgrow="ALWAYS" style="-fx-background-radius: 5;"/>
+                            <Button text="Adicionar" onAction="#addCatReceita" style="-fx-background-color: #4B39EF; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-cursor: hand;"/>
+                        </HBox>
+                        <ListView fx:id="listaCatReceitas" prefHeight="200" style="-fx-background-radius: 5; -fx-border-color: #DDD;"/>
+                        <Button text="Remover Selecionada" onAction="#delCatReceita" style="-fx-background-color: #FFEBEE; -fx-text-fill: #C62828; -fx-font-weight: bold; -fx-border-color: #FFCDD2; -fx-background-radius: 5; -fx-cursor: hand;"/>
+                    </VBox>
+                </Tab>
+            </TabPane>
+        </VBox>
+
         <VBox spacing="15" maxWidth="750" style="-fx-background-color: #F8F9FA; -fx-padding: 30; -fx-background-radius: 10; -fx-border-color: #DEE2E6; -fx-border-radius: 10;">
             <HBox alignment="CENTER_LEFT" spacing="10">
                 <FontIcon iconLiteral="fas-shield-alt" iconSize="20" iconColor="#455A64"/>

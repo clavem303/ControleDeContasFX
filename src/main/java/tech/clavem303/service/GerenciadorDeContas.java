@@ -22,21 +22,26 @@ public class GerenciadorDeContas {
     private static final Logger LOGGER = Logger.getLogger(GerenciadorDeContas.class.getName());
 
     private final ObservableList<Conta> contas;
-    // Lista de configurações de cartões (Nome + Dia Vencimento)
     private final ObservableList<CartaoConfig> cartoesConfig = FXCollections.observableArrayList();
+
+    // --- NOVAS LISTAS OBSERVÁVEIS ---
+    private final ObservableList<String> categoriasReceita = FXCollections.observableArrayList();
+    private final ObservableList<String> categoriasDespesa = FXCollections.observableArrayList();
 
     private static final String ARQUIVO_DADOS = "meus_dados.json";
     private final Gson gson;
     private boolean dadosJaForamCarregados = false;
     private String ultimoMesRecorrencia = null;
 
-    // Estrutura do JSON atualizada
+    // JSON Atualizado
     private record DadosArmazenados(
             List<ContaFixa> fixas,
             List<ContaVariavel> variaveis,
             List<Receita> receitas,
             List<DespesaCartao> cartoes,
-            List<CartaoConfig> configsCartao, // <--- NOVO
+            List<CartaoConfig> configsCartao,
+            List<String> catReceitas, // Novo campo JSON
+            List<String> catDespesas, // Novo campo JSON
             String ultimoMesRecorrencia
     ) {}
 
@@ -48,9 +53,44 @@ public class GerenciadorDeContas {
                 .create();
     }
 
-    // --- MÉTODOS DE CONFIGURAÇÃO DE CARTÃO ---
+    // --- MÉTODOS DE CATEGORIA (CRUD) ---
+    public ObservableList<String> getCategoriasReceita() {
+        if (!dadosJaForamCarregados) getContas();
+        return categoriasReceita;
+    }
+
+    public ObservableList<String> getCategoriasDespesa() {
+        if (!dadosJaForamCarregados) getContas();
+        return categoriasDespesa;
+    }
+
+    public void adicionarCategoriaReceita(String nova) {
+        if (!categoriasReceita.contains(nova)) {
+            categoriasReceita.add(nova);
+            salvarDados();
+        }
+    }
+
+    public void removerCategoriaReceita(String cat) {
+        categoriasReceita.remove(cat);
+        salvarDados();
+    }
+
+    public void adicionarCategoriaDespesa(String nova) {
+        if (!categoriasDespesa.contains(nova)) {
+            categoriasDespesa.add(nova);
+            salvarDados();
+        }
+    }
+
+    public void removerCategoriaDespesa(String cat) {
+        categoriasDespesa.remove(cat);
+        salvarDados();
+    }
+    // -----------------------------------
+
     public ObservableList<CartaoConfig> getCartoesConfig() {
-        if (!dadosJaForamCarregados) getContas(); // Garante carga
+        if (!dadosJaForamCarregados) getContas();
         return cartoesConfig;
     }
 
@@ -63,17 +103,10 @@ public class GerenciadorDeContas {
         salvarDados();
     }
 
-    // --- LÓGICA DE PARCELAMENTO ---
     public void adicionarCompraCartao(String desc, BigDecimal total, int parcelas, String cat, String local, String cartao, LocalDate dataPrimeiraFatura) {
         BigDecimal valorParcela = total.divide(BigDecimal.valueOf(parcelas), 2, java.math.RoundingMode.HALF_UP);
-
         for (int i = 0; i < parcelas; i++) {
-            LocalDate vencimento = dataPrimeiraFatura.plusMonths(i);
-            int numeroParcela = i + 1;
-
-            DespesaCartao nova = new DespesaCartao(
-                    desc, valorParcela, vencimento, false, cat, local, cartao, numeroParcela, parcelas
-            );
+            DespesaCartao nova = new DespesaCartao(desc, valorParcela, dataPrimeiraFatura.plusMonths(i), false, cat, local, cartao, i + 1, parcelas);
             this.contas.add(nova);
         }
         salvarDados();
@@ -81,18 +114,13 @@ public class GerenciadorDeContas {
 
     public void pagarFaturaCartao(String nomeCartao, LocalDate dataVencimentoFatura) {
         for (int i = 0; i < contas.size(); i++) {
-            Conta c = contas.get(i);
-            if (c instanceof DespesaCartao dc) {
-                if (dc.nomeCartao().equalsIgnoreCase(nomeCartao) &&
-                        dc.dataVencimentoFatura().equals(dataVencimentoFatura) && !dc.pago()) {
-                    contas.set(i, dc.comStatusPago(true));
-                }
+            if (contas.get(i) instanceof DespesaCartao dc && dc.nomeCartao().equalsIgnoreCase(nomeCartao) && dc.dataVencimentoFatura().equals(dataVencimentoFatura) && !dc.pago()) {
+                contas.set(i, dc.comStatusPago(true));
             }
         }
         salvarDados();
     }
 
-    // --- PERSISTÊNCIA ---
     private void salvarDados() {
         DadosArmazenados dados = prepararDadosParaSalvar();
         try (Writer writer = new FileWriter(ARQUIVO_DADOS)) {
@@ -110,15 +138,36 @@ public class GerenciadorDeContas {
             if (dados.receitas != null) this.contas.addAll(dados.receitas);
             if (dados.cartoes != null) this.contas.addAll(dados.cartoes);
 
-            // Carrega Configs de Cartão
-            if (dados.configsCartao != null) {
-                this.cartoesConfig.setAll(dados.configsCartao);
+            if (dados.configsCartao != null) this.cartoesConfig.setAll(dados.configsCartao);
+            else if(cartoesConfig.isEmpty()) cartoesConfig.add(new CartaoConfig("Cartão Genérico", 10));
+
+            // CARREGA CATEGORIAS OU INICIA PADRÃO
+            if (dados.catReceitas != null && !dados.catReceitas.isEmpty()) {
+                this.categoriasReceita.setAll(dados.catReceitas);
             } else {
-                // Cria um padrão se não existir nenhum
-                if(cartoesConfig.isEmpty()) cartoesConfig.add(new CartaoConfig("Cartão Genérico", 10));
+                inicializarCategoriasPadrao();
+            }
+
+            if (dados.catDespesas != null && !dados.catDespesas.isEmpty()) {
+                this.categoriasDespesa.setAll(dados.catDespesas);
+            } else {
+                if (dados.catReceitas == null) inicializarCategoriasPadrao(); // Garante q chama se apenas uma for null
             }
 
             this.ultimoMesRecorrencia = dados.ultimoMesRecorrencia;
+        } else {
+            // Primeiro uso (sem arquivo)
+            inicializarCategoriasPadrao();
+            cartoesConfig.add(new CartaoConfig("Cartão Nubank", 10));
+        }
+    }
+
+    private void inicializarCategoriasPadrao() {
+        if (categoriasReceita.isEmpty()) {
+            categoriasReceita.addAll("Salários e rendimentos fixos", "Rendimentos variáveis", "Benefícios e auxílios", "Rendimentos de investimentos", "Outras receitas");
+        }
+        if (categoriasDespesa.isEmpty()) {
+            categoriasDespesa.addAll("Moradia / Habitação", "Alimentação", "Contas básicas / Utilidades", "Transporte", "Saúde", "Educação", "Vestuário e acessórios", "Lazer e entretenimento", "Cuidados pessoais", "Pets", "Dívidas e financiamentos", "Seguros", "Impostos e taxas", "Casa e manutenção", "Doações / Caridade", "Poupança / Investimentos", "Diversos / Imprevistos");
         }
     }
 
@@ -126,36 +175,26 @@ public class GerenciadorDeContas {
         getContas();
         LocalDate hoje = LocalDate.now();
         YearMonth mesAtual = YearMonth.from(hoje);
-
         if (mesAtual.toString().equals(this.ultimoMesRecorrencia)) return;
 
         YearMonth mesAnterior = mesAtual.minusMonths(1);
         List<Conta> fixasPassado = contas.stream()
-                .filter(c -> c instanceof ContaFixa)
-                .filter(c -> YearMonth.from(c.dataVencimento()).equals(mesAnterior))
+                .filter(c -> c instanceof ContaFixa && YearMonth.from(c.dataVencimento()).equals(mesAnterior))
                 .toList();
 
-        if (!fixasPassado.isEmpty()) {
-            for (Conta c : fixasPassado) {
-                this.contas.add(new ContaFixa(c.descricao(), c.valor(), c.dataVencimento().plusMonths(1), false, c.categoria(), c.origem(), c.formaPagamento()));
-            }
+        for (Conta c : fixasPassado) {
+            this.contas.add(new ContaFixa(c.descricao(), c.valor(), c.dataVencimento().plusMonths(1), false, c.categoria(), c.origem(), c.formaPagamento()));
         }
         this.ultimoMesRecorrencia = mesAtual.toString();
         salvarDados();
     }
 
-    // --- CRUD PADRÃO ---
     public void adicionarConta(Conta c) { if(c!=null){ contas.add(c); salvarDados(); }}
     public ObservableList<Conta> getContas() { if(!dadosJaForamCarregados){ carregarDados(); dadosJaForamCarregados=true; } return contas; }
     public void marcarComoPaga(Conta c) { int i=contas.indexOf(c); if(i>=0){ contas.set(i, c.comStatusPago(true)); salvarDados(); }}
     public void removerConta(Conta c) { contas.remove(c); salvarDados(); }
     public void atualizarConta(Conta a, Conta n) { int i=contas.indexOf(a); if(i>=0){ contas.set(i, n); salvarDados(); }}
-    public void recarregarDados() { contas.clear(); carregarDados(); dadosJaForamCarregados=true; }
-
-    public BigDecimal calcularTotalAPagar() {
-        return contas.stream().filter(c -> !(c instanceof Receita) && !c.pago())
-                .map(Conta::valor).reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
+    public void recarregarDados() { contas.clear(); cartoesConfig.clear(); categoriasReceita.clear(); categoriasDespesa.clear(); dadosJaForamCarregados=false; getContas(); }
 
     private DadosArmazenados lerArquivoJson() {
         if (!Files.exists(Paths.get(ARQUIVO_DADOS))) return null;
@@ -175,7 +214,7 @@ public class GerenciadorDeContas {
             else if (c instanceof Receita re) r.add(re);
             else if (c instanceof DespesaCartao dc) cc.add(dc);
         }
-        // Salva também a lista de configs
-        return new DadosArmazenados(f, v, r, cc, new ArrayList<>(this.cartoesConfig), this.ultimoMesRecorrencia);
+        // Salva tudo, incluindo as novas listas de categorias
+        return new DadosArmazenados(f, v, r, cc, new ArrayList<>(this.cartoesConfig), new ArrayList<>(this.categoriasReceita), new ArrayList<>(this.categoriasDespesa), this.ultimoMesRecorrencia);
     }
 }

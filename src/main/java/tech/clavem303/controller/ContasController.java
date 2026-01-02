@@ -132,6 +132,8 @@ public class ContasController {
     public void setService(GerenciadorDeContas service) {
         this.service = service;
 
+        configurarOpcoesFiltro();
+
         // Em vez de carregar tudo na hora (travando a tela), chamamos o background
         carregarDadosEmBackground();
     }
@@ -142,9 +144,7 @@ public class ContasController {
         configurarTabelaFixa();
         configurarTabelaVariavel();
         configurarTabelaCartoes();
-
         configurarTabelaFiltro();
-        configurarOpcoesFiltro();
 
         // Aplica formatação de data
         configurarColunaData(colDataReceita);
@@ -529,15 +529,10 @@ public class ContasController {
     private void configurarOpcoesFiltro() {
         filtroCategoria.getItems().clear();
         filtroCategoria.getItems().add("Todas");
-        filtroCategoria.getItems().addAll(
-                // Copie a mesma lista do FormularioContaController aqui
-                "Salários e rendimentos fixos", "Rendimentos variáveis", "Benefícios e auxílios",
-                "Rendimentos de investimentos", "Outras receitas",
-                "Moradia / Habitação", "Alimentação", "Contas básicas / Utilidades", "Transporte",
-                "Saúde", "Educação", "Vestuário e acessórios", "Lazer e entretenimento",
-                "Cuidados pessoais", "Pets", "Dívidas e financiamentos", "Seguros", "Impostos e taxas",
-                "Casa e manutenção", "Doações / Caridade", "Poupança / Investimentos", "Diversos / Imprevistos"
-        );
+        filtroCategoria.getItems().addAll(service.getCategoriasReceita());
+        filtroCategoria.getItems().addAll(service.getCategoriasDespesa());
+        java.util.List<String> unicas = filtroCategoria.getItems().stream().distinct().toList();
+        filtroCategoria.getItems().setAll(unicas);
         filtroCategoria.getSelectionModel().select("Todas");
 
         filtroStatus.getItems().clear();

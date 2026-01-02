@@ -46,20 +46,6 @@ public class FormularioContaController {
     private Stage dialogStage;
     private Conta contaEdicao;
     private String tipoAtual; // Armazena o tipo definido externamente
-
-    private static final List<String> CAT_RECEITAS = List.of(
-            "Salários e rendimentos fixos", "Rendimentos variáveis",
-            "Benefícios e auxílios", "Rendimentos de investimentos", "Outras receitas"
-    );
-
-    private static final List<String> CAT_DESPESAS = List.of(
-            "Moradia / Habitação", "Alimentação", "Contas básicas / Utilidades", "Transporte",
-            "Saúde", "Educação", "Vestuário e acessórios", "Lazer e entretenimento",
-            "Cuidados pessoais", "Pets", "Dívidas e financiamentos", "Seguros",
-            "Impostos e taxas", "Casa e manutenção", "Doações / Caridade",
-            "Poupança / Investimentos", "Diversos / Imprevistos"
-    );
-
     private static final List<String> PGTO_RECEITAS = List.of("Pix", "Vale", "Conta", "Dinheiro");
     private static final List<String> PGTO_DESPESAS = List.of("Aguardando", "Boleto", "Débito", "Pix", "Vale", "Conta", "Dinheiro");
 
@@ -251,7 +237,7 @@ public class FormularioContaController {
 
         if (isReceita) {
             // Regra 2: Apenas categorias de Receita e Pagamentos Restritos
-            comboCategoria.getItems().addAll(CAT_RECEITAS);
+            comboCategoria.getItems().addAll(service.getCategoriasReceita());
             comboPagamento.getItems().addAll(PGTO_RECEITAS);
 
             lblTitulo.setText("Nova Receita");
@@ -261,7 +247,7 @@ public class FormularioContaController {
 
         } else {
             // Regras 3, 4 e 5: Categorias de Despesa
-            comboCategoria.getItems().addAll(CAT_DESPESAS);
+            comboCategoria.getItems().addAll(service.getCategoriasDespesa());
 
             if (!isCartao) {
                 // Regras 3 e 4: Pagamentos de Despesa (Sem Crédito)
@@ -277,6 +263,13 @@ public class FormularioContaController {
                 lblTitulo.setStyle("-fx-text-fill: #333; -fx-font-weight: bold; -fx-font-size: 24px;");
                 chkPago.setText("Já pagou?");
             }
+        }
+
+        // Seleção segura (caso a categoria salva tenha sido apagada, evita erro)
+        if (contaEdicao != null && comboCategoria.getItems().contains(contaEdicao.categoria())) {
+            comboCategoria.setValue(contaEdicao.categoria());
+        } else if (!comboCategoria.getItems().isEmpty()) {
+            comboCategoria.getSelectionModel().selectFirst();
         }
 
         // Redimensiona janela para caber o form ajustado
