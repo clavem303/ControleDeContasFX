@@ -17,10 +17,12 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import org.kordamp.ikonli.javafx.FontIcon;
+
 import tech.clavem303.model.Conta;
 import tech.clavem303.model.Receita;
 import tech.clavem303.model.DespesaCartao;
 import tech.clavem303.service.GerenciadorDeContas;
+import tech.clavem303.util.IconeUtil;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -29,7 +31,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -325,8 +326,8 @@ public class MainController {
         HBox linha = new HBox(15);
         linha.setAlignment(Pos.CENTER_LEFT);
 
-        String corHex = getCorHexPorCategoria(categoria);
-        FontIcon icone = getIconePorCategoria(categoria);
+        String corHex = IconeUtil.getCorHexPorCategoria(categoria);
+        FontIcon icone = IconeUtil.getIconePorCategoria(categoria);
         icone.setIconSize(24);
 
         VBox info = new VBox(5);
@@ -394,7 +395,7 @@ public class MainController {
 
             StackPane iconBox = new StackPane();
             iconBox.setPrefSize(40, 40);
-            String corBase = c instanceof DespesaCartao ? "#673AB7" : getCorHexPorCategoria(c.categoria());
+            String corBase = c instanceof DespesaCartao ? "#673AB7" : IconeUtil.getCorHexPorCategoria(c.categoria());
             iconBox.setStyle("-fx-background-color: " + corBase + "20; -fx-background-radius: 10;");
 
             FontIcon ic = new FontIcon(c instanceof DespesaCartao ? "far-credit-card" : "fas-file-invoice");
@@ -450,31 +451,4 @@ public class MainController {
         return new VBox(5, lblData, lblSub);
     }
 
-    private String getCorHexPorCategoria(String cat) {
-        if(cat == null) return "#78909C";
-        if(cat.contains("Alimentação")) return "#E65100";
-        if(cat.contains("Habitação") || cat.contains("Casa")) return "#5D4037";
-        if(cat.contains("Transporte")) return "#1976D2";
-        if(cat.contains("Saúde")) return "#D32F2F";
-        if(cat.contains("Lazer")) return "#00ACC1";
-        if(cat.contains("Educação")) return "#303F9F";
-        if(cat.contains("Cuidados")) return "#F06292";
-        return "#FFC107";
-    }
-
-    private FontIcon getIconePorCategoria(String cat) {
-        String icon = "fas-tag";
-        String color = getCorHexPorCategoria(cat);
-        if(cat != null) {
-            if(cat.contains("Alimentação")) icon = "fas-utensils";
-            else if(cat.contains("Transporte")) icon = "fas-car";
-            else if(cat.contains("Saúde")) icon = "fas-heartbeat";
-            else if(cat.contains("Lazer")) icon = "fas-umbrella-beach";
-            else if(cat.contains("Educação")) icon = "fas-graduation-cap";
-            else if(cat.contains("Cuidados")) icon = "fas-spa";
-        }
-        FontIcon fi = new FontIcon(icon);
-        fi.setIconColor(Color.web(color));
-        return fi;
-    }
 }

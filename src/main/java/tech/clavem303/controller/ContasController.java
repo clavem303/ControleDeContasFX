@@ -3,7 +3,6 @@ package tech.clavem303.controller;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -20,6 +19,7 @@ import tech.clavem303.model.Conta;
 import tech.clavem303.model.ContaVariavel;
 import tech.clavem303.service.GerenciadorDeContas;
 import tech.clavem303.service.RelatorioService;
+import tech.clavem303.util.IconeUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -872,57 +872,6 @@ public class ContasController {
         });
     }
 
-    // --- MÉTODOS AUXILIARES DE ÍCONE (Para as Colunas) ---
-    private FontIcon getIconePorCategoria(String categoria) {
-        if (categoria == null) return null;
-        String iconeLiteral = "fas-tag";
-        javafx.scene.paint.Color cor = javafx.scene.paint.Color.web("#555");
-
-        switch (categoria) {
-            case "Salários e rendimentos fixos" -> { iconeLiteral = "fas-money-bill-wave"; cor = javafx.scene.paint.Color.web("#2E7D32"); }
-            case "Rendimentos variáveis" -> { iconeLiteral = "fas-chart-line"; cor = javafx.scene.paint.Color.web("#00695C"); }
-            case "Benefícios e auxílios" -> { iconeLiteral = "fas-hand-holding-heart"; cor = javafx.scene.paint.Color.web("#1565C0"); }
-            case "Rendimentos de investimentos" -> { iconeLiteral = "fas-piggy-bank"; cor = javafx.scene.paint.Color.web("#F9A825"); }
-            case "Outras receitas" -> { iconeLiteral = "fas-plus-circle"; cor = javafx.scene.paint.Color.web("#43A047"); }
-            case "Moradia / Habitação" -> { iconeLiteral = "fas-home"; cor = javafx.scene.paint.Color.web("#5D4037"); }
-            case "Alimentação" -> { iconeLiteral = "fas-utensils"; cor = javafx.scene.paint.Color.web("#E65100"); }
-            case "Contas básicas / Utilidades" -> { iconeLiteral = "fas-lightbulb"; cor = javafx.scene.paint.Color.web("#FBC02D"); }
-            case "Transporte" -> { iconeLiteral = "fas-car"; cor = javafx.scene.paint.Color.web("#1976D2"); }
-            case "Saúde" -> { iconeLiteral = "fas-heartbeat"; cor = javafx.scene.paint.Color.web("#D32F2F"); }
-            case "Educação" -> { iconeLiteral = "fas-graduation-cap"; cor = javafx.scene.paint.Color.web("#303F9F"); }
-            case "Vestuário e acessórios" -> { iconeLiteral = "fas-tshirt"; cor = javafx.scene.paint.Color.web("#8E24AA"); }
-            case "Lazer e entretenimento" -> { iconeLiteral = "fas-umbrella-beach"; cor = javafx.scene.paint.Color.web("#00ACC1"); }
-            case "Cuidados pessoais" -> { iconeLiteral = "fas-spa"; cor = javafx.scene.paint.Color.web("#F06292"); }
-            case "Pets" -> { iconeLiteral = "fas-paw"; cor = javafx.scene.paint.Color.web("#795548"); }
-            case "Dívidas e financiamentos" -> { iconeLiteral = "fas-credit-card"; cor = javafx.scene.paint.Color.web("#B71C1C"); }
-            case "Seguros" -> { iconeLiteral = "fas-shield-alt"; cor = javafx.scene.paint.Color.web("#455A64"); }
-            case "Impostos e taxas" -> { iconeLiteral = "fas-file-invoice-dollar"; cor = javafx.scene.paint.Color.web("#607D8B"); }
-            case "Casa e manutenção" -> { iconeLiteral = "fas-tools"; cor = javafx.scene.paint.Color.web("#FF7043"); }
-            case "Doações / Caridade" -> { iconeLiteral = "fas-hands-helping"; cor = javafx.scene.paint.Color.web("#EC407A"); }
-            case "Poupança / Investimentos" -> { iconeLiteral = "fas-seedling"; cor = javafx.scene.paint.Color.web("#4CAF50"); }
-            case "Diversos / Imprevistos" -> { iconeLiteral = "fas-box-open"; cor = javafx.scene.paint.Color.web("#757575"); }
-        }
-        FontIcon icon = new FontIcon(iconeLiteral); icon.setIconSize(14); icon.setIconColor(cor); return icon;
-    }
-
-    private FontIcon getIconePorPagamento(String pagamento) {
-        if (pagamento == null) return null;
-        String iconeLiteral; javafx.scene.paint.Color corIcone = javafx.scene.paint.Color.web("#555");
-        switch (pagamento) {
-            case "Boleto" -> { iconeLiteral = "fas-barcode"; corIcone = javafx.scene.paint.Color.web("#37474F"); }
-            case "Débito" -> { iconeLiteral = "fas-credit-card"; corIcone = javafx.scene.paint.Color.web("#2196F3"); }
-            case "Crédito" -> { iconeLiteral = "far-credit-card"; corIcone = javafx.scene.paint.Color.web("#E91E63"); }
-            case "Pix" -> { iconeLiteral = "fas-bolt"; corIcone = javafx.scene.paint.Color.web("#00BFA5"); }
-            case "Vale" -> { iconeLiteral = "fas-ticket-alt"; corIcone = javafx.scene.paint.Color.web("#FF9800"); }
-            case "Conta" -> { iconeLiteral = "fas-file-invoice-dollar"; corIcone = javafx.scene.paint.Color.web("#607D8B"); }
-            case "Dinheiro" -> { iconeLiteral = "fas-money-bill-wave"; corIcone = javafx.scene.paint.Color.web("#4CAF50"); }
-            case "Aguardando" -> { iconeLiteral = "fas-hourglass-half"; corIcone = javafx.scene.paint.Color.web("#9E9E9E"); }
-            default -> iconeLiteral = "fas-wallet";
-        }
-        FontIcon icon = new FontIcon(iconeLiteral); icon.setIconSize(14); icon.setIconColor(corIcone); return icon;
-    }
-
-    // Méto-do genérico para colocar ícones em qualquer coluna
     private void configurarColunaComIcone(TableColumn<Conta, String> coluna, boolean isCategoria) {
         coluna.setCellFactory(col -> new TableCell<>() {
             @Override
@@ -933,13 +882,13 @@ public class ContasController {
                     setGraphic(null);
                 } else {
                     setText(item);
-                    // Decide qual ícone buscar (Categoria ou Pagamento)
+                    // MUDANÇA AQUI: Usa a classe centralizada
                     if (isCategoria) {
-                        setGraphic(getIconePorCategoria(item));
+                        setGraphic(IconeUtil.getIconePorCategoria(item));
                     } else {
-                        setGraphic(getIconePorPagamento(item));
+                        setGraphic(IconeUtil.getIconePorPagamento(item));
                     }
-                    setGraphicTextGap(10); // Espaço entre ícone e texto
+                    setGraphicTextGap(10);
                 }
             }
         });
