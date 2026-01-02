@@ -5,13 +5,15 @@
 <?import org.kordamp.ikonli.javafx.FontIcon?>
 <?import javafx.geometry.Insets?>
 
-<ScrollPane fitToWidth="true" style="-fx-background-color: transparent;" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+<ScrollPane fitToWidth="true" style="-fx-background-color: transparent;"
+            xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="tech.clavem303.controller.ConfiguracoesController">
 
     <VBox spacing="30" alignment="TOP_CENTER" style="-fx-padding: 40; -fx-background-color: white; -fx-min-height: 600;">
 
         <Label text="Configurações do Sistema" style="-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #333;"/>
-        <Label text="Gerencie cartões, backups e preferências." style="-fx-text-fill: #90A4AE; -fx-font-size: 14px;"/>
+        <Label text="Gerencie cartões, categorias, backups e preferências."
+               style="-fx-text-fill: #90A4AE; -fx-font-size: 14px;"/>
 
         <Separator maxWidth="750"/>
 
@@ -58,22 +60,41 @@
             <TabPane styleClass="modern-tab-pane">
                 <Tab text="Despesas" closable="false">
                     <VBox spacing="15" style="-fx-padding: 15 0 0 0;">
-                        <HBox spacing="10">
-                            <TextField fx:id="txtNovaCatDespesa" promptText="Nova Categoria de Despesa" HBox.hgrow="ALWAYS" style="-fx-background-radius: 5;"/>
-                            <Button text="Adicionar" onAction="#addCatDespesa" style="-fx-background-color: #4B39EF; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-cursor: hand;"/>
+                        <HBox spacing="10" alignment="CENTER_LEFT">
+                            <ComboBox fx:id="comboIconeDespesa" prefWidth="80" style="-fx-background-radius: 5;"/>
+
+                            <TextField fx:id="txtNovaCatDespesa" promptText="Nome da Categoria" HBox.hgrow="ALWAYS" style="-fx-background-radius: 5;"/>
+
+                            <Button text="Salvar" onAction="#salvarCatDespesa" style="-fx-background-color: #4B39EF; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-cursor: hand;"/>
                         </HBox>
+
                         <ListView fx:id="listaCatDespesas" prefHeight="200" style="-fx-background-radius: 5; -fx-border-color: #DDD;"/>
-                        <Button text="Remover Selecionada" onAction="#delCatDespesa" style="-fx-background-color: #FFEBEE; -fx-text-fill: #C62828; -fx-font-weight: bold; -fx-border-color: #FFCDD2; -fx-background-radius: 5; -fx-cursor: hand;"/>
+
+                        <HBox spacing="10">
+                            <Button text="Editar Selecionada" onAction="#prepararEdicaoDespesa" style="-fx-background-color: #FF9800; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-cursor: hand;"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Button text="Remover" onAction="#delCatDespesa" style="-fx-background-color: #FFEBEE; -fx-text-fill: #C62828; -fx-font-weight: bold; -fx-border-color: #FFCDD2; -fx-background-radius: 5; -fx-cursor: hand;"/>
+                        </HBox>
                     </VBox>
                 </Tab>
+
                 <Tab text="Receitas" closable="false">
                     <VBox spacing="15" style="-fx-padding: 15 0 0 0;">
-                        <HBox spacing="10">
-                            <TextField fx:id="txtNovaCatReceita" promptText="Nova Categoria de Receita" HBox.hgrow="ALWAYS" style="-fx-background-radius: 5;"/>
-                            <Button text="Adicionar" onAction="#addCatReceita" style="-fx-background-color: #4B39EF; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-cursor: hand;"/>
+                        <HBox spacing="10" alignment="CENTER_LEFT">
+                            <ComboBox fx:id="comboIconeReceita" prefWidth="80" style="-fx-background-radius: 5;"/>
+
+                            <TextField fx:id="txtNovaCatReceita" promptText="Nome da Categoria" HBox.hgrow="ALWAYS" style="-fx-background-radius: 5;"/>
+
+                            <Button text="Salvar" onAction="#salvarCatReceita" style="-fx-background-color: #4B39EF; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-cursor: hand;"/>
                         </HBox>
+
                         <ListView fx:id="listaCatReceitas" prefHeight="200" style="-fx-background-radius: 5; -fx-border-color: #DDD;"/>
-                        <Button text="Remover Selecionada" onAction="#delCatReceita" style="-fx-background-color: #FFEBEE; -fx-text-fill: #C62828; -fx-font-weight: bold; -fx-border-color: #FFCDD2; -fx-background-radius: 5; -fx-cursor: hand;"/>
+
+                        <HBox spacing="10">
+                            <Button text="Editar Selecionada" onAction="#prepararEdicaoReceita" style="-fx-background-color: #FF9800; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-cursor: hand;"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Button text="Remover" onAction="#delCatReceita" style="-fx-background-color: #FFEBEE; -fx-text-fill: #C62828; -fx-font-weight: bold; -fx-border-color: #FFCDD2; -fx-background-radius: 5; -fx-cursor: hand;"/>
+                        </HBox>
                     </VBox>
                 </Tab>
             </TabPane>
@@ -85,7 +106,8 @@
                 <Label text="Segurança de Dados" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #455A64;"/>
             </HBox>
 
-            <Label text="Gerencie seus dados locais. Faça backups regulares para evitar perda de informações." wrapText="true" style="-fx-text-fill: #666;"/>
+            <Label text="Gerencie seus dados locais. Faça backups regulares para evitar perda de informações."
+                   wrapText="true" style="-fx-text-fill: #666;"/>
 
             <HBox spacing="20" alignment="CENTER_LEFT">
                 <Button text="Fazer Backup" onAction="#fazerBackup" style="-fx-font-size: 14px; -fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 20; -fx-background-radius: 5; -fx-cursor: hand;">

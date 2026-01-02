@@ -6,6 +6,7 @@ import javafx.stage.FileChooser;
 import org.kordamp.ikonli.javafx.FontIcon;
 import tech.clavem303.model.CartaoConfig;
 import tech.clavem303.service.GerenciadorDeContas;
+import tech.clavem303.util.IconeUtil;
 import tech.clavem303.util.ValidadorFX;
 
 import java.io.File;
@@ -21,30 +22,42 @@ public class ConfiguracoesController {
     @FXML private Spinner<Integer> spinDiaVencimento;
     @FXML private ListView<CartaoConfig> listaCartoes;
 
-    // Componentes de Categoria
+    // --- Componentes da UI (Categorias Despesa) ---
     @FXML private TextField txtNovaCatDespesa;
+    @FXML private ComboBox<String> comboIconeDespesa;
     @FXML private ListView<String> listaCatDespesas;
+
+    // --- Componentes da UI (Categorias Receita) ---
     @FXML private TextField txtNovaCatReceita;
+    @FXML private ComboBox<String> comboIconeReceita;
     @FXML private ListView<String> listaCatReceitas;
 
     private GerenciadorDeContas service;
+
+    // Variáveis de controle para saber se estamos Editando ou Criando
+    private String categoriaEmEdicao = null;       // Para Despesas
+    private String categoriaReceitaEmEdicao = null; // Para Receitas
 
     public void setService(GerenciadorDeContas service) {
         this.service = service;
         carregarListaCartoes();
         carregarListasCategorias();
+
+        // Configura os combos de ícones para ambas as abas
+        configurarComboIcones(comboIconeDespesa);
+        configurarComboIcones(comboIconeReceita);
     }
 
     @FXML
     public void initialize() {
-        // 1. Configura o Spinner (Dias 1 a 31)
+        // 1. Configura o Spinner de Cartão (Dias 1 a 31)
         SpinnerValueFactory<Integer> valueFactory = new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 31, 10);
         spinDiaVencimento.setValueFactory(valueFactory);
 
-        // Limita o nome do cartão a 20 caracteres para não quebrar a UI
+        // 2. Validação de Campos (UX)
         ValidadorFX.limitarTamanho(txtNomeCartao, 20);
 
-        // 2. Configura a Lista para mostrar Ícone + Texto
+        // 3. Configura a Lista de Cartões (Visual)
         listaCartoes.setCellFactory(param -> new ListCell<>() {
             @Override
             protected void updateItem(CartaoConfig item, boolean empty) {
@@ -61,15 +74,41 @@ public class ConfiguracoesController {
                 }
             }
         });
+
+        // 4. Configura a Lista de Despesas (Visual com Ícone)
+        listaCatDespesas.setCellFactory(param -> new ListCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setGraphic(null);
+                } else {
+                    setText(item);
+                    setGraphic(IconeUtil.getIconePorCategoria(item, service));
+                    setGraphicTextGap(10);
+                }
+            }
+        });
+
+        // 5. Configura a Lista de Receitas (Visual com Ícone)
+        listaCatReceitas.setCellFactory(param -> new ListCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setGraphic(null);
+                } else {
+                    setText(item);
+                    setGraphic(IconeUtil.getIconePorCategoria(item, service));
+                    setGraphicTextGap(10);
+                }
+            }
+        });
     }
 
-    // --- LÓGICA DE CARTÕES ---
-
-    private void carregarListaCartoes() {
-        if (service != null) {
-            listaCartoes.setItems(service.getCartoesConfig());
-        }
-    }
+    // --- LÓGICA GERAL DE CATEGORIAS ---
 
     private void carregarListasCategorias() {
         if (service != null) {
@@ -78,13 +117,77 @@ public class ConfiguracoesController {
         }
     }
 
+    // Método genérico para configurar qualquer combobox de ícones
+    private void configurarComboIcones(ComboBox<String> combo) {
+        if (combo == null) return; // Segurança
+
+        combo.getItems().clear();
+        combo.getItems().addAll(IconeUtil.ICONES_DISPONIVEIS.values());
+
+        // Factory para mostrar o desenho do ícone na lista
+        combo.setCellFactory(lv -> new ListCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setGraphic(null);
+                } else {
+                    FontIcon icon = new FontIcon(item);
+                    icon.setIconSize(16);
+                    icon.setIconColor(javafx.scene.paint.Color.web("#555"));
+                    setGraphic(icon);
+                }
+            }
+        });
+
+        // Factory para o botão selecionado
+        combo.setButtonCell(combo.getCellFactory().call(null));
+        combo.getSelectionModel().selectFirst();
+    }
+
+    // --- AÇÕES DE DESPESA (Salvar, Editar, Remover) ---
+
     @FXML
-    private void addCatDespesa() {
-        String nova = txtNovaCatDespesa.getText().trim();
-        if (!nova.isEmpty()) {
-            service.adicionarCategoriaDespesa(nova);
-            txtNovaCatDespesa.clear();
+    private void prepararEdicaoDespesa() {
+        String selecionada = listaCatDespesas.getSelectionModel().getSelectedItem();
+        if (selecionada != null) {
+            categoriaEmEdicao = selecionada;
+            txtNovaCatDespesa.setText(selecionada);
+
+            // Busca ícone salvo ou adivinha
+            String iconeAtual = service.getIconeSalvo(selecionada);
+            if (iconeAtual == null) {
+                iconeAtual = IconeUtil.getIconePorCategoria(selecionada).getIconLiteral();
+            }
+            comboIconeDespesa.setValue(iconeAtual);
         }
+    }
+
+    @FXML
+    private void salvarCatDespesa() {
+        String nome = txtNovaCatDespesa.getText().trim();
+        String icone = comboIconeDespesa.getValue();
+
+        if (nome.isEmpty()) return;
+
+        if (categoriaEmEdicao != null) {
+            // MODO EDIÇÃO
+            if (!categoriaEmEdicao.equals(nome)) {
+                service.removerCategoriaDespesa(categoriaEmEdicao);
+                service.adicionarCategoriaDespesa(nome);
+                // Opcional: service.renomearCategoriaDespesa(categoriaEmEdicao, nome);
+            }
+            categoriaEmEdicao = null;
+        } else {
+            // MODO CRIAÇÃO
+            service.adicionarCategoriaDespesa(nome);
+        }
+
+        service.definirIconeCategoria(nome, icone);
+
+        txtNovaCatDespesa.clear();
+        listaCatDespesas.refresh();
+        mostrarAlerta("Sucesso", "Categoria de despesa salva!", Alert.AlertType.INFORMATION);
     }
 
     @FXML
@@ -95,13 +198,49 @@ public class ConfiguracoesController {
         }
     }
 
+    // --- AÇÕES DE RECEITA (Salvar, Editar, Remover) ---
+
     @FXML
-    private void addCatReceita() {
-        String nova = txtNovaCatReceita.getText().trim();
-        if (!nova.isEmpty()) {
-            service.adicionarCategoriaReceita(nova);
-            txtNovaCatReceita.clear();
+    private void prepararEdicaoReceita() {
+        String selecionada = listaCatReceitas.getSelectionModel().getSelectedItem();
+        if (selecionada != null) {
+            categoriaReceitaEmEdicao = selecionada;
+            txtNovaCatReceita.setText(selecionada);
+
+            // Busca ícone salvo ou adivinha
+            String iconeAtual = service.getIconeSalvo(selecionada);
+            if (iconeAtual == null) {
+                iconeAtual = IconeUtil.getIconePorCategoria(selecionada).getIconLiteral();
+            }
+            comboIconeReceita.setValue(iconeAtual);
         }
+    }
+
+    @FXML
+    private void salvarCatReceita() {
+        String nome = txtNovaCatReceita.getText().trim();
+        String icone = comboIconeReceita.getValue();
+
+        if (nome.isEmpty()) return;
+
+        if (categoriaReceitaEmEdicao != null) {
+            // MODO EDIÇÃO
+            if (!categoriaReceitaEmEdicao.equals(nome)) {
+                service.removerCategoriaReceita(categoriaReceitaEmEdicao);
+                service.adicionarCategoriaReceita(nome);
+            }
+            categoriaReceitaEmEdicao = null;
+        } else {
+            // MODO CRIAÇÃO
+            service.adicionarCategoriaReceita(nome);
+        }
+
+        // Salva o ícone (usa a mesma lógica de mapa do service)
+        service.definirIconeCategoria(nome, icone);
+
+        txtNovaCatReceita.clear();
+        listaCatReceitas.refresh();
+        mostrarAlerta("Sucesso", "Categoria de receita salva!", Alert.AlertType.INFORMATION);
     }
 
     @FXML
@@ -109,6 +248,14 @@ public class ConfiguracoesController {
         String selecionada = listaCatReceitas.getSelectionModel().getSelectedItem();
         if (selecionada != null) {
             service.removerCategoriaReceita(selecionada);
+        }
+    }
+
+    // --- LÓGICA DE CARTÕES ---
+
+    private void carregarListaCartoes() {
+        if (service != null) {
+            listaCartoes.setItems(service.getCartoesConfig());
         }
     }
 
@@ -122,7 +269,6 @@ public class ConfiguracoesController {
             return;
         }
 
-        // Verifica duplicidade pelo nome
         boolean existe = service.getCartoesConfig().stream()
                 .anyMatch(c -> c.nome().equalsIgnoreCase(nome));
 
@@ -143,9 +289,8 @@ public class ConfiguracoesController {
             mostrarAlerta("Atenção", "Selecione um cartão para remover.", Alert.AlertType.WARNING);
             return;
         }
-
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
-                "Deseja remover o cartão '" + selecionado.nome() + "'?\n(Faturas antigas não serão apagadas)",
+                "Deseja remover o cartão '" + selecionado.nome() + "'?",
                 ButtonType.YES, ButtonType.NO);
 
         if (confirm.showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
@@ -153,15 +298,13 @@ public class ConfiguracoesController {
         }
     }
 
-    // --- LÓGICA DE BACKUP (Mantida conforme solicitado) ---
+    // --- LÓGICA DE BACKUP ---
 
     @FXML
     private void fazerBackup() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Salvar Backup Seguro");
         fileChooser.setInitialFileName("backup_financas_" + LocalDate.now() + ".cvm");
-
-        // Filtro exclusivo para sua extensão
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Arquivos Clavem303 (*.cvm)", "*.cvm"));
 
         File destino = fileChooser.showSaveDialog(null);
@@ -170,16 +313,10 @@ public class ConfiguracoesController {
             try {
                 File origem = new File("meus_dados.json");
                 if (origem.exists()) {
-                    // 1. Lê os bytes originais do JSON
                     byte[] dadosOriginais = Files.readAllBytes(origem.toPath());
-
-                    // 2. Criptografa (Codifica em Base64)
                     String dadosCriptografados = Base64.getEncoder().encodeToString(dadosOriginais);
-
-                    // 3. Salva o arquivo embaralhado (.cvm)
                     Files.writeString(destino.toPath(), dadosCriptografados);
-
-                    mostrarAlerta("Sucesso", "Backup criptografado salvo em: " + destino.getName(), Alert.AlertType.INFORMATION);
+                    mostrarAlerta("Sucesso", "Backup salvo em: " + destino.getName(), Alert.AlertType.INFORMATION);
                 } else {
                     mostrarAlerta("Aviso", "Não há dados para salvar ainda.", Alert.AlertType.WARNING);
                 }
@@ -199,34 +336,24 @@ public class ConfiguracoesController {
 
         if (arquivoBackup != null) {
             try {
-                // 1. Lê o conteúdo embaralhado
                 String conteudoCriptografado = Files.readString(arquivoBackup.toPath());
-
-                // 2. Descriptografa (Decodifica de Base64 para bytes reais)
                 byte[] dadosDecodificados = Base64.getDecoder().decode(conteudoCriptografado);
-
-                // 3. Sobrescreve o arquivo oficial (meus_dados.json) com os dados limpos
                 File arquivoOficial = new File("meus_dados.json");
                 Files.write(arquivoOficial.toPath(), dadosDecodificados);
 
-                // 4. Força o sistema a reler o arquivo
                 if (service != null) {
                     service.recarregarDados();
-                    // Opcional: Recarregar a lista de cartões caso o backup tenha trazido cartões diferentes
                     carregarListaCartoes();
+                    carregarListasCategorias(); // Recarrega também as categorias
                 }
-
                 mostrarAlerta("Restaurado", "Dados recuperados com sucesso!", Alert.AlertType.INFORMATION);
 
-            } catch (IllegalArgumentException e) {
-                mostrarAlerta("Erro", "Arquivo inválido ou corrompido! Este não é um backup .cvm válido.", Alert.AlertType.ERROR);
-            } catch (IOException e) {
-                mostrarAlerta("Erro", "Falha ao ler arquivo: " + e.getMessage(), Alert.AlertType.ERROR);
+            } catch (Exception e) {
+                mostrarAlerta("Erro", "Falha ao restaurar: " + e.getMessage(), Alert.AlertType.ERROR);
             }
         }
     }
 
-    // Helper genérico para alertas
     private void mostrarAlerta(String titulo, String msg, Alert.AlertType tipo) {
         Alert alert = new Alert(tipo);
         alert.setTitle(titulo);
