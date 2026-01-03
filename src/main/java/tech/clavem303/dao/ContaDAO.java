@@ -1,6 +1,7 @@
 package tech.clavem303.dao;
 
 import tech.clavem303.model.*;
+
 import java.sql.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -8,137 +9,162 @@ import java.util.List;
 
 public class ContaDAO {
 
-    public void salvar(Conta c) {
-        String sql = """
-            INSERT INTO conta (
-                tipo, descricao, valor, data_vencimento, pago, categoria, origem, forma_pagamento,
-                quantidade, valor_unitario, nome_cartao, numero_parcela, total_parcelas
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """;
+    private Connection connection;
 
-        try (Connection conn = ConexaoFactory.conectar(); PreparedStatement stmt = conn.prepareStatement(sql)) {
-            configurarStatement(stmt, c);
-            stmt.executeUpdate();
-        } catch (SQLException e) { e.printStackTrace(); }
+    public ContaDAO() {
+        this.connection = ConexaoFactory.getConnection(); // Agora funciona!
+        // A inicialização de tabelas está sendo feita no Main ou no Service,
+        // mas se quiser garantir, pode chamar aqui:
+        // ConexaoFactory.inicializarBanco();
     }
 
-    // Método auxiliar para preencher o PreparedStatement dependendo do tipo
-    private void configurarStatement(PreparedStatement stmt, Conta c) throws SQLException {
-        stmt.setString(2, c.descricao());
-        stmt.setBigDecimal(3, c.valor());
-        stmt.setString(4, c.dataVencimento().toString());
-        stmt.setInt(5, c.pago() ? 1 : 0);
-        stmt.setString(6, c.categoria());
-        stmt.setString(7, c.origem());
-        stmt.setString(8, c.formaPagamento());
+    public void salvar(Conta conta) {
+        String sql = """
+                INSERT INTO contas (
+                    tipo, descricao, valor, data_vencimento, pago, categoria, origem, forma_pagamento,
+                    quantidade, valor_unitario, cartao_nome, numero_parcela, total_parcelas, recorrente
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """;
 
-        // Padrão NULL para campos que não existem no tipo específico
-        stmt.setObject(9, null); // Qtd
-        stmt.setObject(10, null); // Unitario
-        stmt.setObject(11, null); // Nome Cartao
-        stmt.setObject(12, null); // Num Parcela
-        stmt.setObject(13, null); // Total Parcela
-
-        if (c instanceof Receita) {
-            stmt.setString(1, "RECEITA");
-        } else if (c instanceof ContaFixa) {
-            stmt.setString(1, "FIXA");
-        } else if (c instanceof ContaVariavel cv) {
-            stmt.setString(1, "VARIAVEL");
-            stmt.setBigDecimal(9, cv.quantidade());
-            stmt.setBigDecimal(10, cv.valorUnitario());
-        } else if (c instanceof DespesaCartao dc) {
-            stmt.setString(1, "CARTAO");
-            stmt.setString(11, dc.nomeCartao());
-            stmt.setInt(12, dc.numeroParcela());
-            stmt.setInt(13, dc.totalParcelas());
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            preencherStatement(stmt, conta);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao salvar conta", e);
         }
     }
 
-    public void deletar(Conta c) {
-        // ATENÇÃO: Para deletar corretamente, idealmente você precisaria de um ID no seu Modelo.
-        // Como estamos migrando rápido, vamos deletar por correspondência exata de campos chaves.
-        // Futuramente, adicione "int id" na interface Conta.
-        String sql = "DELETE FROM conta WHERE descricao=? AND data_vencimento=? AND valor=?";
-        try (Connection conn = ConexaoFactory.conectar(); PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, c.descricao());
-            stmt.setString(2, c.dataVencimento().toString());
-            stmt.setBigDecimal(3, c.valor());
+    public void atualizarStatusPago(Conta conta, boolean pago) {
+        String sql = "UPDATE contas SET pago = ? WHERE descricao = ? AND data_vencimento = ? AND valor = ?";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setBoolean(1, pago);
+            stmt.setString(2, conta.descricao());
+            stmt.setDate(3, Date.valueOf(conta.dataVencimento()));
+            stmt.setBigDecimal(4, conta.valor());
             stmt.executeUpdate();
-        } catch (SQLException e) { e.printStackTrace(); }
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao atualizar status", e);
+        }
     }
 
-    public void atualizarStatusPago(Conta c, boolean pago) {
-        String sql = "UPDATE conta SET pago=? WHERE descricao=? AND data_vencimento=? AND valor=?";
-        try (Connection conn = ConexaoFactory.conectar(); PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, pago ? 1 : 0);
-            stmt.setString(2, c.descricao());
-            stmt.setString(3, c.dataVencimento().toString());
-            stmt.setBigDecimal(4, c.valor());
+    public void deletar(Conta conta) {
+        String sql = "DELETE FROM contas WHERE descricao = ? AND data_vencimento = ? AND categoria = ?";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, conta.descricao());
+            stmt.setDate(2, Date.valueOf(conta.dataVencimento()));
+            stmt.setString(3, conta.categoria());
             stmt.executeUpdate();
-        } catch (SQLException e) { e.printStackTrace(); }
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao deletar conta", e);
+        }
     }
 
     public List<Conta> listarTodos() {
         List<Conta> lista = new ArrayList<>();
-        String sql = "SELECT * FROM conta";
+        String sql = "SELECT * FROM contas ORDER BY data_vencimento";
 
-        try (Connection conn = ConexaoFactory.conectar(); Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
+        try (PreparedStatement stmt = connection.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
             while (rs.next()) {
-                lista.add(mapearResultSet(rs));
+                lista.add(mapear(rs));
             }
-        } catch (SQLException e) { e.printStackTrace(); }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
         return lista;
-    }
-
-    private Conta mapearResultSet(ResultSet rs) throws SQLException {
-        String tipo = rs.getString("tipo");
-        LocalDate data = LocalDate.parse(rs.getString("data_vencimento"));
-        boolean pago = rs.getInt("pago") == 1;
-
-        // Dados comuns
-        String desc = rs.getString("descricao");
-        java.math.BigDecimal valor = rs.getBigDecimal("valor");
-        String cat = rs.getString("categoria");
-        String origem = rs.getString("origem");
-        String formaPgto = rs.getString("forma_pagamento");
-
-        return switch (tipo) {
-            case "RECEITA" -> new Receita(desc, valor, data, pago, cat, origem, formaPgto);
-            case "FIXA" -> new ContaFixa(desc, valor, data, pago, cat, origem, formaPgto);
-            case "VARIAVEL" -> new ContaVariavel(desc, valor, data, pago, rs.getBigDecimal("quantidade"), rs.getBigDecimal("valor_unitario"), cat, origem, formaPgto);
-            case "CARTAO" -> new DespesaCartao(desc, valor, data, pago, cat, origem, rs.getString("nome_cartao"), rs.getInt("numero_parcela"), rs.getInt("total_parcelas"));
-            default -> throw new IllegalStateException("Tipo desconhecido no banco: " + tipo);
-        };
-    }
-
-    public void limparTudo() {
-        try (Connection conn = ConexaoFactory.conectar(); Statement stmt = conn.createStatement()) {
-            stmt.executeUpdate("DELETE FROM conta");
-        } catch (SQLException e) { e.printStackTrace(); }
     }
 
     public List<ContaFixa> listarFixasPorMes(LocalDate dataReferencia) {
         List<ContaFixa> lista = new ArrayList<>();
-        // Filtra por contas FIXAS e pelo Mês/Ano da data passada
-        String sql = "SELECT * FROM conta WHERE tipo = 'FIXA' AND strftime('%Y-%m', data_vencimento) = ?";
+        String sql = "SELECT * FROM contas WHERE tipo = 'FIXA' AND strftime('%Y-%m', data_vencimento) = ?";
 
-        // Formata para "2025-12"
-        String anoMes = dataReferencia.toString().substring(0, 7);
-
-        try (Connection conn = ConexaoFactory.conectar(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            String anoMes = dataReferencia.toString().substring(0, 7);
             stmt.setString(1, anoMes);
+
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                    // Reutilizando seu método mapearResultSet (certifique-se que ele é private ou protected)
-                    // Se mapearResultSet for private, copie a lógica ou mude para protected
-                    Conta c = mapearResultSet(rs);
+                    Conta c = mapear(rs);
                     if (c instanceof ContaFixa cf) {
                         lista.add(cf);
                     }
                 }
             }
-        } catch (SQLException e) { e.printStackTrace(); }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
         return lista;
+    }
+
+    private void preencherStatement(PreparedStatement stmt, Conta c) throws SQLException {
+        String tipo = "VARIAVEL";
+        if (c instanceof Receita) tipo = "RECEITA";
+        else if (c instanceof ContaFixa) tipo = "FIXA";
+        else if (c instanceof DespesaCartao) tipo = "CARTAO";
+
+        stmt.setString(1, tipo);
+        stmt.setString(2, c.descricao());
+        stmt.setBigDecimal(3, c.valor());
+        stmt.setDate(4, Date.valueOf(c.dataVencimento()));
+        stmt.setBoolean(5, c.pago());
+        stmt.setString(6, c.categoria());
+        stmt.setString(7, c.origem());
+        stmt.setString(8, c.formaPagamento());
+
+        stmt.setObject(9, null);
+        stmt.setObject(10, null);
+        stmt.setObject(11, null);
+        stmt.setObject(12, null);
+        stmt.setObject(13, null);
+        stmt.setBoolean(14, false);
+
+        if (c instanceof ContaVariavel cv) {
+            stmt.setBigDecimal(9, cv.quantidade());
+            stmt.setBigDecimal(10, cv.valorUnitario());
+        }
+        else if (c instanceof DespesaCartao dc) {
+            stmt.setString(11, dc.nomeCartao());
+            stmt.setInt(12, dc.numeroParcela());
+            stmt.setInt(13, dc.totalParcelas());
+        }
+        else if (c instanceof ContaFixa cf) {
+            stmt.setBoolean(14, cf.isRecorrente());
+        }
+    }
+
+    private Conta mapear(ResultSet rs) throws SQLException {
+        String tipo = rs.getString("tipo");
+        String desc = rs.getString("descricao");
+        java.math.BigDecimal valor = rs.getBigDecimal("valor");
+        LocalDate data = rs.getDate("data_vencimento").toLocalDate();
+        boolean pago = rs.getBoolean("pago");
+        String cat = rs.getString("categoria");
+        String origem = rs.getString("origem");
+        String pgto = rs.getString("forma_pagamento");
+        boolean recorrente = rs.getBoolean("recorrente");
+
+        switch (tipo) {
+            case "RECEITA" -> {
+                return new Receita(desc, valor, data, pago, cat, origem, pgto);
+            }
+            case "FIXA" -> {
+                return new ContaFixa(desc, valor, data, pago, cat, origem, pgto, recorrente);
+            }
+            case "CARTAO" -> {
+                String nomeCartao = rs.getString("cartao_nome");
+                int nParcela = rs.getInt("numero_parcela");
+                int tParcelas = rs.getInt("total_parcelas");
+                return new DespesaCartao(desc, valor, data, pago, cat, origem, nomeCartao, nParcela, tParcelas);
+            }
+            default -> {
+                // VARIAVEL - CORREÇÃO AQUI
+                java.math.BigDecimal qtd = rs.getBigDecimal("quantidade");
+                java.math.BigDecimal unit = rs.getBigDecimal("valor_unitario");
+
+                // Usando o construtor CANÔNICO do Record (todos os campos na ordem certa)
+                return new ContaVariavel(desc, valor, data, pago, qtd, unit, cat, origem, pgto);
+            }
+        }
     }
 }

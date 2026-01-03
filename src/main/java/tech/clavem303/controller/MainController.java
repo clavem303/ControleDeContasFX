@@ -214,10 +214,10 @@ public class MainController {
             }
         }
 
-        // --- LÓGICA FINANCEIRA ---
+        // --- LÓGICA FINANCEIRA REVISADA ---
         BigDecimal recursosDisponiveis = saldoInicial.add(totalEntradasMes);
 
-        double porcentagemReal;   // Valor matemático (ex: 1.25 para 125%)
+        double porcentagemReal;   // Valor matemático (ex: 0.85 para 85%)
         boolean estourado = false;
 
         if (recursosDisponiveis.compareTo(BigDecimal.ZERO) <= 0) {
@@ -230,35 +230,55 @@ public class MainController {
             }
         } else {
             porcentagemReal = totalDespesasMes.doubleValue() / recursosDisponiveis.doubleValue();
-            if (porcentagemReal > 1.0) {
+            if (porcentagemReal >= 1.0) {
                 estourado = true;
             }
         }
 
-        // --- LÓGICA DE TEXTO E CORES ---
+        // --- GATILHOS E MENSAGENS (NOVAS REGRAS) ---
         String corTema, tituloStatus, msgConselho, bgMensagem;
         String textoPercentual;
 
-        if (estourado || saldoInicial.compareTo(BigDecimal.ZERO) < 0) {
-            corTema = "#F44336"; // Vermelho Base
-            tituloStatus = "ESTOURADO";
+        if (estourado) {
+            // >= 100% - CATASTROFE
+            corTema = "#B71C1C"; // Vermelho Escuro/Vinho
+            tituloStatus = "INSUSTENTÁVEL";
             bgMensagem = "#FFEBEE";
-            msgConselho = "Crítico! Suas despesas ultrapassaram os recursos do mês.";
+            msgConselho = "Situação insustentável!\n Seus gastos excederam a renda.\n Pare e planeje agora.";
 
             if (recursosDisponiveis.compareTo(BigDecimal.ZERO) <= 0) textoPercentual = ">100%";
             else textoPercentual = String.format("%.0f%%", porcentagemReal * 100);
 
-        } else if (porcentagemReal < 0.5) {
-            corTema = "#4CAF50"; tituloStatus = "SAUDÁVEL"; bgMensagem = "#E8F5E9";
-            msgConselho = "O mês está sob controle. Continue assim e poupe o excedente!";
+        } else if (porcentagemReal > 0.90) {
+            // 90% a 99% - CRÍTICO (Alerta Vermelho)
+            corTema = "#D32F2F"; // Vermelho Padrão
+            tituloStatus = "CRÍTICO";
+            bgMensagem = "#FFEBEE";
+            msgConselho = "Alerta Vermelho! Gastos acima de 90%. Risco alto de endividamento se houver imprevistos.";
             textoPercentual = String.format("%.0f%%", porcentagemReal * 100);
-        } else if (porcentagemReal < 0.85) {
-            corTema = "#FF9800"; tituloStatus = "ATENÇÃO"; bgMensagem = "#FFF3E0";
-            msgConselho = "Gastos elevados. Evite novas compras não essenciais.";
+
+        } else if (porcentagemReal > 0.80) {
+            // 80% a 90% - ALERTA (Amarelo/Laranja)
+            corTema = "#F57C00"; // Laranja Escuro
+            tituloStatus = "ATENÇÃO";
+            bgMensagem = "#FFF3E0";
+            msgConselho = "Cuidado. Você ultrapassou o limite ideal de 80%. Tente reduzir gastos não essenciais.";
             textoPercentual = String.format("%.0f%%", porcentagemReal * 100);
+
+        } else if (porcentagemReal > 0.70) {
+            // 70% a 80% - SAUDÁVEL
+            corTema = "#1976D2"; // Azul
+            tituloStatus = "SAUDÁVEL";
+            bgMensagem = "#E3F2FD";
+            msgConselho = "Equilíbrio ideal (regra 80/20). Você está gastando dentro do planejado. Poupe ou invista!";
+            textoPercentual = String.format("%.0f%%", porcentagemReal * 100);
+
         } else {
-            corTema = "#F44336"; tituloStatus = "CRÍTICO"; bgMensagem = "#FFEBEE";
-            msgConselho = "Alerta! Você está prestes a esgotar seu saldo.";
+            // <= 70% - EXCELENTE
+            corTema = "#388E3C"; // Verde Forte
+            tituloStatus = "EXCELENTE";
+            bgMensagem = "#E8F5E9";
+            msgConselho = "Parabéns! Gastos abaixo de 70%. Ótima oportunidade de investimento e reserva.";
             textoPercentual = String.format("%.0f%%", porcentagemReal * 100);
         }
 
@@ -277,16 +297,16 @@ public class MainController {
         graficoBase.setMaxSize(220, 220);
 
         if (!estourado) {
-            // Normal: Gasto (Cor Tema) + Livre (AZUL SOLICITADO)
+            // Normal: Gasto (Cor Tema) + Livre (Cinza Claro para contraste neutro)
             PieChart.Data sliceGasto = new PieChart.Data("Gasto", porcentagemReal);
             PieChart.Data sliceLivre = new PieChart.Data("Livre", 1.0 - porcentagemReal);
             dadosBase.addAll(sliceGasto, sliceLivre);
 
-            // Aplica cores após adicionar
             sliceGasto.getNode().setStyle("-fx-pie-color: " + corTema + ";");
-            sliceLivre.getNode().setStyle("-fx-pie-color: #2196F3;"); // <--- AZUL SOLICITADO
+            // Fundo neutro (cinza claro) para destacar a cor do status
+            sliceLivre.getNode().setStyle("-fx-pie-color: #ECEFF1;");
         } else {
-            // Estourado: Fundo totalmente Vermelho
+            // Estourado: Fundo totalmente da cor do tema
             PieChart.Data sliceFull = new PieChart.Data("Base", 1.0);
             dadosBase.add(sliceFull);
             sliceFull.getNode().setStyle("-fx-pie-color: " + corTema + ";");
@@ -296,9 +316,8 @@ public class MainController {
 
         // 2. GRÁFICO OVERLAY (SOBREPOSIÇÃO PARA O EXCESSO)
         if (estourado) {
-            // Calcula quanto passou de 100% (ex: 1.25 -> 0.25)
+            // Calcula quanto passou de 100%
             double excesso = porcentagemReal % 1.0;
-            // Se for exatamente multiplo de 100% (ex 200%), o resto é 0, então mostramos cheio
             if (excesso == 0 && porcentagemReal > 0) excesso = 1.0;
 
             ObservableList<PieChart.Data> dadosOverlay = FXCollections.observableArrayList();
@@ -310,17 +329,17 @@ public class MainController {
             PieChart graficoOverlay = new PieChart(dadosOverlay);
             graficoOverlay.setLabelsVisible(false);
             graficoOverlay.setLegendVisible(false);
-            graficoOverlay.setStartAngle(90); // Mesmo ângulo para alinhar
-            graficoOverlay.setMaxSize(220, 220); // Mesmo tamanho
+            graficoOverlay.setStartAngle(90);
+            graficoOverlay.setMaxSize(220, 220);
 
-            // Cor Vermelho Escuro para o excesso, Transparente para o resto
-            sliceExcesso.getNode().setStyle("-fx-pie-color: #8B0000;"); // <--- VERMELHO FORTE
+            // Cor Vermelho Quase Preto para destacar o excesso sobre o vermelho
+            sliceExcesso.getNode().setStyle("-fx-pie-color: #5D1010;");
             sliceTransparente.getNode().setStyle("-fx-pie-color: transparent;");
 
             donutContainer.getChildren().add(graficoOverlay);
         }
 
-        // 3. BURACO DO DONUT (CENTRO)
+        // 3. BURACO DO DONUT
         javafx.scene.shape.Circle buraco = new javafx.scene.shape.Circle(80);
         buraco.setFill(Color.WHITE);
 
@@ -329,21 +348,25 @@ public class MainController {
         textoCentro.setAlignment(Pos.CENTER);
 
         Label lblPct = new Label(textoPercentual);
-        lblPct.setStyle("-fx-font-size: 38px; -fx-font-weight: 900; -fx-text-fill: " + (estourado ? "#8B0000" : corTema) + ";");
+        lblPct.setStyle("-fx-font-size: 38px; -fx-font-weight: 900; -fx-text-fill: " + (estourado ? "#B71C1C" : corTema) + ";");
         Label lblDesc = new Label("GASTO (MÊS)");
         lblDesc.setStyle("-fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: #90A4AE;");
         textoCentro.getChildren().addAll(lblPct, lblDesc);
 
         donutContainer.getChildren().addAll(buraco, textoCentro);
 
-        // --- RESTO DO LAYOUT ---
+        // Caixa de Mensagem
+        // 1. O Painel Principal alinha tudo ao TOPO
         VBox painelMensagem = new VBox(10);
-        painelMensagem.setAlignment(Pos.CENTER_LEFT);
+        painelMensagem.setAlignment(Pos.TOP_CENTER);
         painelMensagem.setStyle("-fx-background-color: " + bgMensagem + "; -fx-background-radius: 15; -fx-padding: 25;");
         HBox.setHgrow(painelMensagem, Priority.ALWAYS);
 
+        // 2. Cabeçalho (Ícone + Título)
         HBox cabecalhoMsg = new HBox(10);
-        cabecalhoMsg.setAlignment(Pos.CENTER_LEFT);
+        cabecalhoMsg.setAlignment(Pos.CENTER);
+        cabecalhoMsg.setMinHeight(40);
+
         FontIcon iconeLampada = new FontIcon("fas-lightbulb");
         iconeLampada.setIconColor(Color.web(corTema));
         iconeLampada.setIconSize(28);
@@ -351,11 +374,16 @@ public class MainController {
         lblTituloMsg.setStyle("-fx-font-weight: 900; -fx-font-size: 24px; -fx-text-fill: " + corTema + ";");
         cabecalhoMsg.getChildren().addAll(iconeLampada, lblTituloMsg);
 
+        // 3. Corpo da Mensagem
         Label lblCorpoMsg = new Label(msgConselho);
         lblCorpoMsg.setWrapText(true);
+        lblCorpoMsg.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
         lblCorpoMsg.setStyle("-fx-font-size: 22px; -fx-text-fill: #546E7A; -fx-font-weight: normal;");
+        VBox containerTexto = new VBox(lblCorpoMsg);
+        containerTexto.setAlignment(Pos.CENTER); // Centraliza o Label verticalmente e horizontalmente DENTRO deste espaço
+        VBox.setVgrow(containerTexto, Priority.ALWAYS); // Ocupa to-do o espaço que sobra abaixo do cabeçalho
 
-        painelMensagem.getChildren().addAll(cabecalhoMsg, lblCorpoMsg);
+        painelMensagem.getChildren().addAll(cabecalhoMsg, containerTexto);
         topoContainer.getChildren().addAll(donutContainer, painelMensagem);
 
         VBox listaCategorias = new VBox(15);

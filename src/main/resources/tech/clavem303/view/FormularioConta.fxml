@@ -39,9 +39,12 @@
         <Label fx:id="lblPagamento" text="Pago no:" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
         <ComboBox fx:id="comboPagamento" prefWidth="350" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
 
-        <VBox fx:id="areaFixa" spacing="5" GridPane.rowIndex="6" GridPane.columnIndex="1">
+        <VBox fx:id="areaFixa" spacing="10" GridPane.rowIndex="6" GridPane.columnIndex="1">
             <Label text="Valor Total (R$):" style="-fx-font-size: 14px;"/>
             <TextField fx:id="txtValorFixo" promptText="0,00"/>
+
+            <CheckBox fx:id="chkRecorrente" text="Despesa Recorrente (Repetir todo mês)"
+                      style="-fx-font-weight: bold; -fx-text-fill: #555;"/>
         </VBox>
 
         <HBox fx:id="areaVariavel" spacing="15" alignment="CENTER_LEFT" visible="false" managed="false" GridPane.rowIndex="6" GridPane.columnIndex="1">

@@ -43,12 +43,15 @@ public class FormularioContaController {
     @FXML private TextField txtNumParcelas;
     @FXML private Button btnSalvar;
 
+    // CheckBox para definir se a conta fixa deve se repetir no próximo mês
+    @FXML private CheckBox chkRecorrente;
+
     private GerenciadorDeContas service;
     private Stage dialogStage;
     private Conta contaEdicao;
     private String tipoAtual; // Armazena o tipo definido externamente
 
-    // Listas de Pagamento (fixas no código pois raramente mudam)
+    // Listas de Pagamento
     private static final List<String> PGTO_RECEITAS = List.of("Pix", "Vale", "Conta", "Dinheiro");
     private static final List<String> PGTO_DESPESAS = List.of("Aguardando", "Boleto", "Débito", "Pix", "Vale", "Conta", "Dinheiro");
 
@@ -56,7 +59,10 @@ public class FormularioContaController {
         dateVencimento.setValue(LocalDate.now());
         dateCompraCartao.setValue(LocalDate.now());
 
-        // --- VALIDAÇÃO DE CAMPOS (Proteção contra letras em campos numéricos) ---
+        // Padrão: Fixas já nascem marcadas como recorrentes
+        chkRecorrente.setSelected(true);
+
+        // --- VALIDAÇÃO DE CAMPOS ---
         ValidadorFX.configurarDecimal(txtValorFixo);
         ValidadorFX.configurarDecimal(txtValorUnitario);
         ValidadorFX.configurarDecimal(txtQuantidade);
@@ -72,7 +78,7 @@ public class FormularioContaController {
                 super.updateItem(item, empty);
                 if (!empty && item!=null) {
                     setText(item);
-                    setGraphic(IconeUtil.getIconePorCategoria(item, service)); // Passa o service para buscar ícones personalizados
+                    setGraphic(IconeUtil.getIconePorCategoria(item, service));
                     setGraphicTextGap(10);
                 } else {
                     setText(null);
@@ -118,22 +124,19 @@ public class FormularioContaController {
 
             // --- CASO 1: EDIÇÃO DE PARCELA DE CARTÃO (JÁ EXISTENTE) ---
             if (contaEdicao instanceof DespesaCartao dc) {
-                // Aqui pegamos o valor do campo "Valor Fixo" que está sendo usado para editar a parcela
                 BigDecimal valorParcela = converterValor(txtValorFixo.getText());
-
-                // Mantemos a data original (não pode mudar vencimento de fatura avulso)
                 LocalDate dataVencimentoOriginal = dc.dataVencimento();
 
                 DespesaCartao contaAtualizada = new DespesaCartao(
                         desc,
-                        valorParcela,       // Valor novo editado
-                        dataVencimentoOriginal, // Data original mantida
+                        valorParcela,
+                        dataVencimentoOriginal,
                         statusPago,
                         cat,
                         origem,
-                        dc.nomeCartao(),    // Mantém cartão
-                        dc.numeroParcela(), // Mantém número da parcela
-                        dc.totalParcelas()  // Mantém total
+                        dc.nomeCartao(),
+                        dc.numeroParcela(),
+                        dc.totalParcelas()
                 );
 
                 service.atualizarConta(contaEdicao, contaAtualizada);
@@ -155,8 +158,8 @@ public class FormularioContaController {
 
                 CartaoConfig cartaoConfig = comboCartaoSelecionado.getValue();
                 YearMonth mesReferencia = comboMesReferencia.getValue();
-
                 LocalDate dataCompra = dateCompraCartao.getValue();
+
                 String descricaoFinal = desc;
                 if (dataCompra != null) {
                     DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM");
@@ -172,7 +175,7 @@ public class FormularioContaController {
                 return;
             }
 
-            // --- CASO 3: OUTROS TIPOS (Despesa Comum / Receita) ---
+            // --- CASO 3: OUTROS TIPOS (Despesa Comum / Receita / Fixa) ---
             LocalDate data = dateVencimento.getValue();
             String pagamento = comboPagamento.getValue();
             BigDecimal valor = null, qtd = null, unitario = null;
@@ -184,14 +187,20 @@ public class FormularioContaController {
                 unitario = converterValor(txtValorUnitario.getText());
             }
 
-            String tipoTecnico = switch (tipo) {
-                case "DESPESA FIXA" -> "FIXA";
-                case "DESPESA VARIÁVEL" -> "VARIAVEL";
-                default -> "RECEITA";
-            };
+            Conta contaFinal;
 
-            Conta novaConta = ContaFactory.criarConta(tipoTecnico, desc, data, valor, qtd, unitario, cat, origem, pagamento);
-            Conta contaFinal = novaConta.comStatusPago(statusPago);
+            // Se for FIXA, usamos o construtor direto para passar o booleano 'recorrente'
+            if ("DESPESA FIXA".equals(tipo)) {
+                boolean isRecorrente = chkRecorrente.isSelected();
+                contaFinal = new ContaFixa(desc, valor, data, statusPago, cat, origem, pagamento, isRecorrente);
+            } else {
+                // Para Variáveis e Receitas, mantemos o uso da Factory
+                String tipoTecnico = "VARIAVEL";
+                if ("RECEITA".equals(tipo)) tipoTecnico = "RECEITA";
+
+                Conta novaConta = ContaFactory.criarConta(tipoTecnico, desc, data, valor, qtd, unitario, cat, origem, pagamento);
+                contaFinal = novaConta.comStatusPago(statusPago);
+            }
 
             if (contaEdicao == null) service.adicionarConta(contaFinal);
             else service.atualizarConta(contaEdicao, contaFinal);
@@ -219,6 +228,11 @@ public class FormularioContaController {
         areaFixa.setVisible(isSimples); areaFixa.setManaged(isSimples);
         areaVariavel.setVisible(isVariavel); areaVariavel.setManaged(isVariavel);
         areaCartao.setVisible(isCartao); areaCartao.setManaged(isCartao);
+
+        // Só mostra Recorrente se for Despesa Fixa
+        chkRecorrente.setVisible(isFixa);
+        chkRecorrente.setManaged(isFixa);
+        if (!isFixa) chkRecorrente.setSelected(false);
 
         // 2. Controle de Pagamento
         boolean mostrarPagamento = !isCartao;
@@ -250,12 +264,11 @@ public class FormularioContaController {
             chkPago.setDisable(false);
         }
 
-        // 4. FILTRAGEM DE LISTAS (Aqui está a correção principal)
+        // 4. FILTRAGEM DE LISTAS
         comboCategoria.getItems().clear();
         comboPagamento.getItems().clear();
 
         if (isReceita) {
-            // Busca categorias de RECEITA do banco de dados
             if (service != null) {
                 comboCategoria.getItems().addAll(service.getCategoriasReceita());
             }
@@ -267,7 +280,6 @@ public class FormularioContaController {
             if (!comboCategoria.getItems().isEmpty()) comboCategoria.getSelectionModel().select(0);
 
         } else {
-            // Busca categorias de DESPESA do banco de dados
             if (service != null) {
                 comboCategoria.getItems().addAll(service.getCategoriasDespesa());
             }
@@ -336,8 +348,11 @@ public class FormularioContaController {
                 comboPagamento.setValue("Aguardando");
             }
 
-            if (conta instanceof ContaFixa) {
+            if (conta instanceof ContaFixa cf) {
+                // Aqui carregamos o valor e se é recorrente
                 txtValorFixo.setText(formatarDecimalParaTela(conta.valor()));
+                chkRecorrente.setSelected(cf.isRecorrente());
+
             } else if (conta instanceof ContaVariavel cv) {
                 txtQuantidade.setText(formatarDecimalParaTela(cv.quantidade()));
                 txtValorUnitario.setText(formatarDecimalParaTela(cv.valorUnitario()));

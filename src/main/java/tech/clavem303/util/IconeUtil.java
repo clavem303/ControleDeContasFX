@@ -86,7 +86,7 @@ public class IconeUtil {
 
             if (cat.contains("salário") || cat.contains("renda")) iconeLiteral = "fas-money-bill-wave";
             else if (cat.contains("investimento")) iconeLiteral = "fas-piggy-bank";
-            else if (cat.contains("casa") || cat.contains("moradia")) iconeLiteral = "fas-home";
+                else if (cat.contains("casa") || cat.contains("moradia")) iconeLiteral = "fas-home";
             else if (cat.contains("alimentação")) iconeLiteral = "fas-utensils";
             else if (cat.contains("contas")) iconeLiteral = "fas-lightbulb"; // Novo
             else if (cat.contains("transporte")) iconeLiteral = "fas-car";

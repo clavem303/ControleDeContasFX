@@ -16,8 +16,8 @@ public class GerenciadorDeContas {
     // Listas Observáveis para a UI
     private final ObservableList<Conta> contas;
     private final ObservableList<CartaoConfig> cartoesConfig;
-    private final ObservableList<String> categoriasReceita; // Volta a existir
-    private final ObservableList<String> categoriasDespesa; // Volta a existir
+    private final ObservableList<String> categoriasReceita;
+    private final ObservableList<String> categoriasDespesa;
 
     // Cache de ícones (para não ir no banco toda hora que desenhar uma célula)
     private final Map<String, String> mapaIcones = new HashMap<>();
@@ -49,18 +49,63 @@ public class GerenciadorDeContas {
 
     private void inicializarCategoriasPadraoSeNecessario() {
         if (categoriaDAO.estaVazia()) {
-            // Receitas (Simplificadas)
-            List.of("Salário", "Renda Extra", "Benefícios", "Investimentos", "Outros")
-                    .forEach(c -> categoriaDAO.adicionar(c, "RECEITA"));
 
-            // Despesas (Simplificadas)
-            List.of(
-                    "Casa", "Alimentação", "Contas", "Transporte",
-                    "Saúde", "Educação", "Roupas", "Lazer",
-                    "Pessoal", "Pets", "Dívidas", "Seguros",
-                    "Impostos", "Manutenção", "Doações", "Diversos"
-            ).forEach(c -> categoriaDAO.adicionar(c, "DESPESA"));
+            // O Collator garante que a ordem alfabética respeite os acentos (pt-BR)
+            // Ex: "Água" vem logo no início, junto com "A", e não no final da lista.
+            java.text.Collator collator = java.text.Collator.getInstance(new java.util.Locale("pt", "BR"));
+
+            // --- 1. PREPARAÇÃO DAS RECEITAS (Ordenadas) ---
+            java.util.Map<String, String> receitas = new java.util.TreeMap<>(collator);
+            receitas.put("Salário", "fas-money-bill-wave");
+            receitas.put("Renda Extra", "fas-plus-circle");
+            receitas.put("Investimentos", "fas-chart-line");
+            receitas.put("Benefícios", "fas-hand-holding-usd");
+            receitas.put("Outros", "fas-tag");
+
+            // Insere no banco
+            receitas.forEach((nome, icone) -> criarCatPadrao(nome, icone, "RECEITA"));
+
+
+            // --- 2. PREPARAÇÃO DAS DESPESAS (Ordenadas) ---
+            java.util.Map<String, String> despesas = new java.util.TreeMap<>(collator);
+
+            // Adiciona Fixas
+            despesas.put("Água", "fas-faucet");
+            despesas.put("Luz", "fas-lightbulb");
+            despesas.put("Celular", "fas-mobile-alt");
+            despesas.put("Internet", "fas-wifi");
+            despesas.put("Casa", "fas-home");
+            despesas.put("Seguro", "fas-shield-alt");
+            despesas.put("Faculdade", "fas-graduation-cap");
+            despesas.put("Cartão de Crédito", "fas-credit-card");
+
+            // Adiciona Variáveis
+            despesas.put("Fast Food", "fas-hamburger");
+            despesas.put("Restaurante", "fas-utensils");
+            despesas.put("Mercado", "fas-shopping-cart");
+            despesas.put("Padaria", "fas-bread-slice");
+            despesas.put("Compra Online", "fas-shopping-bag");
+            despesas.put("Presente", "fas-gift");
+            despesas.put("Viagem/Lazer", "fas-umbrella-beach");
+            despesas.put("Transporte", "fas-car");
+            despesas.put("Assinatura", "fas-file-contract");
+            despesas.put("Imposto/Taxa", "fas-file-invoice-dollar");
+            despesas.put("Investimento", "fas-chart-line");
+            despesas.put("Saúde/Farmácia", "fas-heartbeat");
+            despesas.put("Educação", "fas-user-graduate");
+            despesas.put("Vestuário", "fas-tshirt");
+            despesas.put("Dívida", "fas-exchange-alt");
+            despesas.put("Manutenção", "fas-tools");
+            despesas.put("Diversos", "fas-box-open");
+
+            // Insere no banco (agora o loop vai rodar em ordem alfabética)
+            despesas.forEach((nome, icone) -> criarCatPadrao(nome, icone, "DESPESA"));
         }
+    }
+
+    private void criarCatPadrao(String nome, String icone, String tipo) {
+        categoriaDAO.adicionar(nome, tipo);
+        categoriaDAO.definirIcone(nome, icone);
     }
 
     public void recarregarDados() {
@@ -79,7 +124,7 @@ public class GerenciadorDeContas {
         mapaIcones.putAll(categoriaDAO.carregarIcones());
     }
 
-    // --- MÉTODOS DE CATEGORIA (RESTAURADOS PARA O COMPILADOR) ---
+    // --- MÉTODOS DE CATEGORIA ---
 
     public ObservableList<String> getCategoriasReceita() {
         return categoriasReceita;
@@ -116,8 +161,6 @@ public class GerenciadorDeContas {
     public void definirIconeCategoria(String categoria, String iconeLiteral) {
         categoriaDAO.definirIcone(categoria, iconeLiteral);
         mapaIcones.put(categoria, iconeLiteral);
-        // Força atualização visual da lista se necessário
-        // (JavaFX TableView atualiza auto se o item mudar, mas aqui é só mapa auxiliar)
     }
 
     public String getIconeSalvo(String categoria) {
@@ -196,7 +239,7 @@ public class GerenciadorDeContas {
 
     public void verificarRecorrenciaMensal() {
         LocalDate hoje = LocalDate.now();
-        String mesAtualStr = java.time.YearMonth.from(hoje).toString(); // "2026-01"
+        String mesAtualStr = java.time.YearMonth.from(hoje).toString(); // Ex: "2026-01"
 
         String ultimoMes = sistemaDAO.getValor("ultimo_mes_recorrencia");
 
@@ -205,28 +248,35 @@ public class GerenciadorDeContas {
 
         System.out.println("Gerando recorrência para: " + mesAtualStr);
 
-        // Busca as contas fixas do mês PASSADO
+        // Busca as contas fixas do mês PASSADO para replicar
         LocalDate mesPassado = hoje.minusMonths(1);
         List<ContaFixa> fixasAnteriores = contaDAO.listarFixasPorMes(mesPassado);
 
         for (ContaFixa c : fixasAnteriores) {
-            // Cria uma nova conta igual, mas com data +1 mês e status não pago
-            LocalDate novaData = c.dataVencimento().plusMonths(1);
 
-            ContaFixa nova = new ContaFixa(
-                    c.descricao(),
-                    c.valor(),
-                    novaData,
-                    false, // Reseta para Pendente
-                    c.categoria(),
-                    c.origem(),
-                    c.formaPagamento()
-            );
+            // --- ATUALIZAÇÃO PRINCIPAL AQUI ---
+            // Verifica se a conta está marcada como Recorrente antes de clonar
+            if (c.isRecorrente()) {
 
-            adicionarConta(nova); // Salva no banco e na lista
+                // Cria uma nova conta igual, mas com data +1 mês e status não pago
+                LocalDate novaData = c.dataVencimento().plusMonths(1);
+
+                ContaFixa nova = new ContaFixa(
+                        c.descricao(),
+                        c.valor(),
+                        novaData,
+                        false, // Reseta para Pendente
+                        c.categoria(),
+                        c.origem(),
+                        c.formaPagamento(),
+                        true // A nova conta continua sendo recorrente
+                );
+
+                adicionarConta(nova); // Salva no banco e atualiza a UI
+            }
         }
 
-        // Atualiza a flag no banco
+        // Atualiza a flag no banco para não rodar de novo neste mês
         sistemaDAO.setValor("ultimo_mes_recorrencia", mesAtualStr);
     }
 }

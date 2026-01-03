@@ -19,13 +19,14 @@ public class ContaFactory {
             BigDecimal valorUnitario,
             String categoria,
             String origem,
-            String formaPagamento // <--- NOVO
+            String formaPagamento
     ) {
 
         String tipoUpper = tipo.toUpperCase();
 
         return switch (tipoUpper) {
-            case "FIXA" -> new ContaFixa(descricao, valor, dataVencimento, categoria, origem, formaPagamento);
+            // CORREÇÃO: Adicionado 'false' (pago) na 4ª posição para casar com o construtor
+            case "FIXA" -> new ContaFixa(descricao, valor, dataVencimento, false, categoria, origem, formaPagamento);
 
             case "RECEITA" -> new Receita(descricao, valor, dataVencimento, false, categoria, origem, formaPagamento);
 

@@ -9,31 +9,39 @@ public class ConexaoFactory {
 
     private static final String URL = "jdbc:sqlite:financeiro.db";
 
-    public static Connection conectar() throws SQLException {
-        return DriverManager.getConnection(URL);
+    // O DAO chama este método de 'getConnection', então renomeamos aqui
+    public static Connection getConnection() {
+        try {
+            return DriverManager.getConnection(URL);
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao conectar no banco", e);
+        }
     }
 
     public static void inicializarBanco() {
-        try (Connection conn = conectar(); Statement stmt = conn.createStatement()) {
+        try (Connection conn = getConnection(); Statement stmt = conn.createStatement()) {
 
-            // 1. Tabela de Contas
+            // 1. Tabela de Contas (Nome corrigido para 'contas' no plural)
             String sqlConta = """
-                CREATE TABLE IF NOT EXISTS conta (
+                CREATE TABLE IF NOT EXISTS contas (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     tipo TEXT NOT NULL,
                     descricao TEXT NOT NULL,
-                    valor REAL NOT NULL,
-                    data_vencimento TEXT NOT NULL,
-                    pago INTEGER DEFAULT 0,
+                    valor DECIMAL(10,2),
+                    data_vencimento DATE,
+                    pago BOOLEAN,
                     categoria TEXT,
                     origem TEXT,
                     forma_pagamento TEXT,
-                    quantidade REAL,
-                    valor_unitario REAL,
-                    nome_cartao TEXT,
+                    
+                    quantidade DECIMAL(10,2),
+                    valor_unitario DECIMAL(10,2),
+                    
+                    cartao_nome TEXT,
                     numero_parcela INTEGER,
                     total_parcelas INTEGER,
-                    data_compra TEXT
+                    
+                    recorrente BOOLEAN DEFAULT 0
                 );
             """;
             stmt.execute(sqlConta);
@@ -47,11 +55,11 @@ public class ConexaoFactory {
             """;
             stmt.execute(sqlCartao);
 
-            // 3. (NOVO) Tabela de Categorias e Ícones
+            // 3. Tabela de Categorias e Ícones
             String sqlCategoria = """
                 CREATE TABLE IF NOT EXISTS categoria_config (
                     nome TEXT NOT NULL,
-                    tipo TEXT NOT NULL, -- 'RECEITA' ou 'DESPESA'
+                    tipo TEXT NOT NULL,
                     icone TEXT,
                     PRIMARY KEY (nome, tipo)
                 );
