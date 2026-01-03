@@ -303,22 +303,23 @@ public class ConfiguracoesController {
     @FXML
     private void fazerBackup() {
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Salvar Backup Seguro");
-        fileChooser.setInitialFileName("backup_financas_" + LocalDate.now() + ".cvm");
-        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Arquivos Clavem303 (*.cvm)", "*.cvm"));
+        fileChooser.setTitle("Salvar Backup do Banco de Dados");
+        fileChooser.setInitialFileName("backup_clavem303_" + LocalDate.now() + ".db");
+        // Filtro para arquivos DB
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Banco de Dados SQLite", "*.db"));
 
         File destino = fileChooser.showSaveDialog(null);
 
         if (destino != null) {
             try {
-                File origem = new File("meus_dados.json");
-                if (origem.exists()) {
-                    byte[] dadosOriginais = Files.readAllBytes(origem.toPath());
-                    String dadosCriptografados = Base64.getEncoder().encodeToString(dadosOriginais);
-                    Files.writeString(destino.toPath(), dadosCriptografados);
-                    mostrarAlerta("Sucesso", "Backup salvo em: " + destino.getName(), Alert.AlertType.INFORMATION);
+                File bancoOrigem = new File("financeiro.db");
+
+                if (bancoOrigem.exists()) {
+                    // Cópia simples de bytes
+                    Files.copy(bancoOrigem.toPath(), destino.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                    mostrarAlerta("Sucesso", "Backup do banco de dados salvo com sucesso!", Alert.AlertType.INFORMATION);
                 } else {
-                    mostrarAlerta("Aviso", "Não há dados para salvar ainda.", Alert.AlertType.WARNING);
+                    mostrarAlerta("Erro", "Arquivo de banco de dados não encontrado.", Alert.AlertType.ERROR);
                 }
             } catch (IOException e) {
                 mostrarAlerta("Erro", "Falha ao salvar backup: " + e.getMessage(), Alert.AlertType.ERROR);
@@ -328,28 +329,37 @@ public class ConfiguracoesController {
 
     @FXML
     private void restaurarBackup() {
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
+                "A restauração irá substituir todos os dados atuais pelos do backup.\nDeseja continuar?",
+                ButtonType.YES, ButtonType.NO);
+
+        if (confirm.showAndWait().orElse(ButtonType.NO) == ButtonType.NO) return;
+
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Selecione o arquivo .cvm para Restaurar");
-        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Arquivos Clavem303 (*.cvm)", "*.cvm"));
+        fileChooser.setTitle("Selecione o arquivo de Backup (.db)");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Banco de Dados SQLite", "*.db"));
 
         File arquivoBackup = fileChooser.showOpenDialog(null);
 
         if (arquivoBackup != null) {
             try {
-                String conteudoCriptografado = Files.readString(arquivoBackup.toPath());
-                byte[] dadosDecodificados = Base64.getDecoder().decode(conteudoCriptografado);
-                File arquivoOficial = new File("meus_dados.json");
-                Files.write(arquivoOficial.toPath(), dadosDecodificados);
+                File bancoDestino = new File("financeiro.db");
 
+                // Sobrescreve o arquivo atual
+                Files.copy(arquivoBackup.toPath(), bancoDestino.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+
+                // Recarrega a memória
                 if (service != null) {
                     service.recarregarDados();
+                    // Atualiza UI
                     carregarListaCartoes();
-                    carregarListasCategorias(); // Recarrega também as categorias
+                    carregarListasCategorias();
                 }
-                mostrarAlerta("Restaurado", "Dados recuperados com sucesso!", Alert.AlertType.INFORMATION);
 
-            } catch (Exception e) {
-                mostrarAlerta("Erro", "Falha ao restaurar: " + e.getMessage(), Alert.AlertType.ERROR);
+                mostrarAlerta("Restaurado", "Dados recuperados! O sistema foi atualizado.", Alert.AlertType.INFORMATION);
+
+            } catch (IOException e) {
+                mostrarAlerta("Erro", "Falha ao restaurar banco: " + e.getMessage(), Alert.AlertType.ERROR);
             }
         }
     }

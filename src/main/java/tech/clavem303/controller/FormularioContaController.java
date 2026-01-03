@@ -47,6 +47,8 @@ public class FormularioContaController {
     private Stage dialogStage;
     private Conta contaEdicao;
     private String tipoAtual; // Armazena o tipo definido externamente
+
+    // Listas de Pagamento (fixas no código pois raramente mudam)
     private static final List<String> PGTO_RECEITAS = List.of("Pix", "Vale", "Conta", "Dinheiro");
     private static final List<String> PGTO_DESPESAS = List.of("Aguardando", "Boleto", "Débito", "Pix", "Vale", "Conta", "Dinheiro");
 
@@ -54,45 +56,49 @@ public class FormularioContaController {
         dateVencimento.setValue(LocalDate.now());
         dateCompraCartao.setValue(LocalDate.now());
 
-        // --- VALIDAÇÃO DE CAMPOS (NOVO) ---
-        // Campos que aceitam decimais (R$ ou Kg)
+        // --- VALIDAÇÃO DE CAMPOS (Proteção contra letras em campos numéricos) ---
         ValidadorFX.configurarDecimal(txtValorFixo);
         ValidadorFX.configurarDecimal(txtValorUnitario);
         ValidadorFX.configurarDecimal(txtQuantidade);
         ValidadorFX.configurarDecimal(txtTotalCartao);
-
-        // Campos apenas inteiros
         ValidadorFX.configurarInteiro(txtNumParcelas);
 
         // 1. Configura Mês (Cartão)
         configurarComboMeses();
 
-        // 2. Configura CellFactory com IconeUtil
+        // 2. Configura Visual das Categorias (Com Ícones)
         comboCategoria.setCellFactory(lv -> new ListCell<>() {
             @Override protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
                 if (!empty && item!=null) {
                     setText(item);
-                    setGraphic(IconeUtil.getIconePorCategoria(item)); // <--- AQUI
+                    setGraphic(IconeUtil.getIconePorCategoria(item, service)); // Passa o service para buscar ícones personalizados
                     setGraphicTextGap(10);
-                } else {setText(null); setGraphic(null);}
+                } else {
+                    setText(null);
+                    setGraphic(null);
+                }
             }
         });
         comboCategoria.setButtonCell(comboCategoria.getCellFactory().call(null));
 
-        // 3. Configura Pagamento com IconeUtil
+        // 3. Configura Visual de Pagamento
         comboPagamento.setCellFactory(lv -> new ListCell<>() {
             @Override protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
                 if (!empty && item!=null) {
                     setText(item);
-                    setGraphic(IconeUtil.getIconePorPagamento(item)); // <--- AQUI
+                    setGraphic(IconeUtil.getIconePorPagamento(item));
                     setGraphicTextGap(10);
-                } else {setText(null); setGraphic(null);}
+                } else {
+                    setText(null);
+                    setGraphic(null);
+                }
             }
         });
+        comboPagamento.setButtonCell(comboPagamento.getCellFactory().call(null));
 
-        // 4. Bind Pagamento vs CheckBox
+        // 4. Trava combo de pagamento se não estiver pago
         comboPagamento.disableProperty().bind(chkPago.selectedProperty().not());
     }
 
@@ -115,7 +121,7 @@ public class FormularioContaController {
                 // Aqui pegamos o valor do campo "Valor Fixo" que está sendo usado para editar a parcela
                 BigDecimal valorParcela = converterValor(txtValorFixo.getText());
 
-                // Mantemos a data original (já que não pode mudar vencimento de fatura avulso)
+                // Mantemos a data original (não pode mudar vencimento de fatura avulso)
                 LocalDate dataVencimentoOriginal = dc.dataVencimento();
 
                 DespesaCartao contaAtualizada = new DespesaCartao(
@@ -132,12 +138,11 @@ public class FormularioContaController {
 
                 service.atualizarConta(contaEdicao, contaAtualizada);
                 dialogStage.close();
-                return; // <--- SAI DAQUI PARA NÃO CAIR NA VALIDAÇÃO ABAIXO
+                return;
             }
 
             // --- CASO 2: NOVA COMPRA CARTÃO (CRIAR PARCELAS) ---
             if ("CARTÃO DE CRÉDITO".equals(tipo)) {
-                // Só valida esses campos se for NOVA compra
                 if (txtTotalCartao.getText().isEmpty() || comboCartaoSelecionado.getValue() == null) {
                     mostrarAlerta("Informe Valor Total e Cartão!");
                     return;
@@ -215,28 +220,28 @@ public class FormularioContaController {
         areaVariavel.setVisible(isVariavel); areaVariavel.setManaged(isVariavel);
         areaCartao.setVisible(isCartao); areaCartao.setManaged(isCartao);
 
-        // 2. Controle de Pagamento (Cartão não tem essa opção)
+        // 2. Controle de Pagamento
         boolean mostrarPagamento = !isCartao;
         comboPagamento.setVisible(mostrarPagamento); comboPagamento.setManaged(mostrarPagamento);
         lblPagamento.setVisible(mostrarPagamento); lblPagamento.setManaged(mostrarPagamento);
 
-        // 3. Controle de Data (Cartão usa Mês, outros usam Data)
+        // 3. Controle de Data
         if (isCartao) {
             lblData.setText("Fatura de:");
             dateVencimento.setVisible(false); dateVencimento.setManaged(false);
             comboMesReferencia.setVisible(true); comboMesReferencia.setManaged(true);
 
-            // Configurações exclusivas de Cartão
             chkPago.setSelected(false);
             chkPago.setDisable(true);
             if (service != null && service.getCartoesConfig().isEmpty()) {
-                mostrarAlerta("Nenhum cartão cadastrado.\n\nVá em 'Configurações' no menu lateral para cadastrar seus cartões antes de lançar compras.");
-                // Opcional: Fechar o diálogo ou bloquear o botão de salvar
+                mostrarAlerta("Nenhum cartão cadastrado.\n\nVá em 'Configurações' para cadastrar cartões.");
                 btnSalvar.setDisable(true);
             } else {
                 btnSalvar.setDisable(false);
-                comboCartaoSelecionado.setItems(service.getCartoesConfig());
-                comboCartaoSelecionado.getSelectionModel().selectFirst();
+                if (service != null) {
+                    comboCartaoSelecionado.setItems(service.getCartoesConfig());
+                    comboCartaoSelecionado.getSelectionModel().selectFirst();
+                }
             }
         } else {
             lblData.setText("Data:");
@@ -245,28 +250,31 @@ public class FormularioContaController {
             chkPago.setDisable(false);
         }
 
-        // 4. FILTRAGEM DE LISTAS (A Mágica Acontece Aqui)
+        // 4. FILTRAGEM DE LISTAS (Aqui está a correção principal)
         comboCategoria.getItems().clear();
         comboPagamento.getItems().clear();
 
         if (isReceita) {
-            // Regra 2: Apenas categorias de Receita e Pagamentos Restritos
-            comboCategoria.getItems().addAll(service.getCategoriasReceita());
+            // Busca categorias de RECEITA do banco de dados
+            if (service != null) {
+                comboCategoria.getItems().addAll(service.getCategoriasReceita());
+            }
             comboPagamento.getItems().addAll(PGTO_RECEITAS);
 
             lblTitulo.setText("Nova Receita");
             lblTitulo.setStyle("-fx-text-fill: #4CAF50; -fx-font-weight: bold; -fx-font-size: 24px;");
             chkPago.setText("Já recebeu?");
-            comboCategoria.getSelectionModel().select(0); // Seleciona Salário por padrão
+            if (!comboCategoria.getItems().isEmpty()) comboCategoria.getSelectionModel().select(0);
 
         } else {
-            // Regras 3, 4 e 5: Categorias de Despesa
-            comboCategoria.getItems().addAll(service.getCategoriasDespesa());
+            // Busca categorias de DESPESA do banco de dados
+            if (service != null) {
+                comboCategoria.getItems().addAll(service.getCategoriasDespesa());
+            }
 
             if (!isCartao) {
-                // Regras 3 e 4: Pagamentos de Despesa (Sem Crédito)
                 comboPagamento.getItems().addAll(PGTO_DESPESAS);
-                comboPagamento.getSelectionModel().select("Débito"); // Padrão seguro
+                comboPagamento.getSelectionModel().select("Débito");
             }
 
             if (isCartao) {
@@ -279,16 +287,16 @@ public class FormularioContaController {
             }
         }
 
-        // Seleção segura (caso a categoria salva tenha sido apagada, evita erro)
+        // Seleção segura (para edição)
         if (contaEdicao != null && comboCategoria.getItems().contains(contaEdicao.categoria())) {
             comboCategoria.setValue(contaEdicao.categoria());
         } else if (!comboCategoria.getItems().isEmpty()) {
             comboCategoria.getSelectionModel().selectFirst();
         }
 
-        // Redimensiona janela para caber o form ajustado
         if (dialogStage != null) dialogStage.sizeToScene();
     }
+
     public void setContaParaEditar(Conta conta) {
         this.contaEdicao = conta;
 
@@ -305,38 +313,29 @@ public class FormularioContaController {
         comboCategoria.setValue(conta.categoria());
         txtOrigem.setText(conta.origem());
 
-        // --- CONFIGURAÇÃO ESPECÍFICA DE EDIÇÃO ---
-
+        // Configuração de edição
         if (conta instanceof DespesaCartao dc) {
-            // Se for cartão, esconde a área de criação (laranja) e mostra a área simples (fixa)
             areaCartao.setVisible(false); areaCartao.setManaged(false);
-
-            // Reutiliza a área de valor fixo para editar o valor da parcela
             areaFixa.setVisible(true); areaFixa.setManaged(true);
             txtValorFixo.setText(formatarDecimalParaTela(dc.valor()));
-            txtValorFixo.setDisable(false); // Permite editar o valor!
+            txtValorFixo.setDisable(false);
 
-            // Mostra data, mas TRAVADA
             lblData.setText("Vencimento:");
             dateVencimento.setVisible(true); dateVencimento.setManaged(true);
             comboMesReferencia.setVisible(false); comboMesReferencia.setManaged(false);
-
             dateVencimento.setValue(dc.dataVencimento());
-            dateVencimento.setDisable(true); // <--- TRAVA A DATA (Não editável)
+            dateVencimento.setDisable(true);
 
             lblTitulo.setText("Editar Parcela " + dc.getInfoParcela());
-
         } else {
-            // Para outros tipos, destrava a data
             dateVencimento.setValue(conta.dataVencimento());
             dateVencimento.setDisable(false);
-
             comboPagamento.setValue(conta.formaPagamento());
+
             if (!conta.pago() && (conta.formaPagamento() == null || conta.formaPagamento().isEmpty())) {
                 comboPagamento.setValue("Aguardando");
             }
 
-            // Preenche valores
             if (conta instanceof ContaFixa) {
                 txtValorFixo.setText(formatarDecimalParaTela(conta.valor()));
             } else if (conta instanceof ContaVariavel cv) {
@@ -346,12 +345,13 @@ public class FormularioContaController {
                 txtValorFixo.setText(formatarDecimalParaTela(conta.valor()));
             }
         }
-
         btnSalvar.setText("Atualizar");
     }
+
     public void setService(GerenciadorDeContas service) { this.service = service; }
     public void setDialogStage(Stage dialogStage) { this.dialogStage = dialogStage; }
     private void mostrarAlerta(String msg) { Alert a = new Alert(Alert.AlertType.ERROR); a.setContentText(msg); a.showAndWait(); }
+
     private void configurarComboMeses() {
         YearMonth atual = YearMonth.now();
         for (int i = 0; i < 13; i++) comboMesReferencia.getItems().add(atual.plusMonths(i));
@@ -362,24 +362,19 @@ public class FormularioContaController {
             @Override public YearMonth fromString(String string) { return null; }
         });
     }
+
     private BigDecimal converterValor(String texto) {
         if (texto == null || texto.isEmpty()) return BigDecimal.ZERO;
         String limpo = texto.trim();
-
-        // LÓGICA INTELIGENTE:
-        // 1. Se tem vírgula, assumimos padrão BR (Ex: 1.000,50 ou 100,50)
         if (limpo.contains(",")) {
-            // Remove os pontos de milhar e troca a vírgula por ponto decimal
             limpo = limpo.replace(".", "").replace(",", ".");
         }
-        // 2. Se NÃO tem vírgula, assumimos padrão US ou Simples (Ex: 153.57 ou 1000)
-        // Nesse caso, NÃO mexemos nos pontos, pois eles são decimais!
-
         try {
             return new BigDecimal(limpo);
         } catch (NumberFormatException e) {
             return BigDecimal.ZERO;
         }
     }
+
     private String formatarDecimalParaTela(BigDecimal v) { return v==null?"":v.toString().replace(".",","); }
 }

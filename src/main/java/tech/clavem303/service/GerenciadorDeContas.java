@@ -1,253 +1,232 @@
 package tech.clavem303.service;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import tech.clavem303.dao.*;
 import tech.clavem303.model.*;
-import tech.clavem303.util.LocalDateAdapter;
 
-import java.io.*;
 import java.math.BigDecimal;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.time.LocalDate;
-import java.time.YearMonth;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class GerenciadorDeContas {
 
-    private static final Logger LOGGER = Logger.getLogger(GerenciadorDeContas.class.getName());
+    // Listas Observáveis para a UI
     private final ObservableList<Conta> contas;
-    private final ObservableList<CartaoConfig> cartoesConfig = FXCollections.observableArrayList();
-    private final ObservableList<String> categoriasReceita = FXCollections.observableArrayList();
-    private final ObservableList<String> categoriasDespesa = FXCollections.observableArrayList();
-    private static final String ARQUIVO_DADOS = "meus_dados.json";
-    private final Gson gson;
-    private boolean dadosJaForamCarregados = false;
-    private String ultimoMesRecorrencia = null;
-    private final Map<String, String> mapaIcones = new java.util.HashMap<>();
+    private final ObservableList<CartaoConfig> cartoesConfig;
+    private final ObservableList<String> categoriasReceita; // Volta a existir
+    private final ObservableList<String> categoriasDespesa; // Volta a existir
 
-    private record DadosArmazenados(
-            List<ContaFixa> fixas,
-            List<ContaVariavel> variaveis,
-            List<Receita> receitas,
-            List<DespesaCartao> cartoes,
-            List<CartaoConfig> configsCartao,
-            List<String> catReceitas,
-            List<String> catDespesas,
-            Map<String, String> iconesCustomizados,
-            String ultimoMesRecorrencia
-    ) {}
+    // Cache de ícones (para não ir no banco toda hora que desenhar uma célula)
+    private final Map<String, String> mapaIcones = new HashMap<>();
+
+    // DAOs
+    private final ContaDAO contaDAO;
+    private final CartaoDAO cartaoDAO;
+    private final CategoriaDAO categoriaDAO;
+    private final SistemaDAO sistemaDAO;
+
     public GerenciadorDeContas() {
+        ConexaoFactory.inicializarBanco();
+
+        this.contaDAO = new ContaDAO();
+        this.cartaoDAO = new CartaoDAO();
+        this.categoriaDAO = new CategoriaDAO();
+        this.sistemaDAO = new SistemaDAO();
+
         this.contas = FXCollections.observableArrayList();
-        this.gson = new GsonBuilder()
-                .registerTypeAdapter(LocalDate.class, new LocalDateAdapter())
-                .setPrettyPrinting()
-                .create();
+        this.cartoesConfig = FXCollections.observableArrayList();
+        this.categoriasReceita = FXCollections.observableArrayList();
+        this.categoriasDespesa = FXCollections.observableArrayList();
+
+        // Verifica se precisa criar categorias padrão (primeira execução)
+        inicializarCategoriasPadraoSeNecessario();
+
+        recarregarDados();
     }
 
-    // --- MÉTODOS DE CATEGORIA (CRUD) ---
+    private void inicializarCategoriasPadraoSeNecessario() {
+        if (categoriaDAO.estaVazia()) {
+            // Receitas (Simplificadas)
+            List.of("Salário", "Renda Extra", "Benefícios", "Investimentos", "Outros")
+                    .forEach(c -> categoriaDAO.adicionar(c, "RECEITA"));
+
+            // Despesas (Simplificadas)
+            List.of(
+                    "Casa", "Alimentação", "Contas", "Transporte",
+                    "Saúde", "Educação", "Roupas", "Lazer",
+                    "Pessoal", "Pets", "Dívidas", "Seguros",
+                    "Impostos", "Manutenção", "Doações", "Diversos"
+            ).forEach(c -> categoriaDAO.adicionar(c, "DESPESA"));
+        }
+    }
+
+    public void recarregarDados() {
+        contas.clear();
+        contas.addAll(contaDAO.listarTodos());
+
+        cartoesConfig.clear();
+        cartoesConfig.addAll(cartaoDAO.listar());
+
+        // Recarrega Categorias
+        categoriasReceita.setAll(categoriaDAO.listar("RECEITA"));
+        categoriasDespesa.setAll(categoriaDAO.listar("DESPESA"));
+
+        // Recarrega Ícones
+        mapaIcones.clear();
+        mapaIcones.putAll(categoriaDAO.carregarIcones());
+    }
+
+    // --- MÉTODOS DE CATEGORIA (RESTAURADOS PARA O COMPILADOR) ---
+
     public ObservableList<String> getCategoriasReceita() {
-        if (!dadosJaForamCarregados) getContas();
         return categoriasReceita;
     }
 
     public ObservableList<String> getCategoriasDespesa() {
-        if (!dadosJaForamCarregados) getContas();
         return categoriasDespesa;
     }
 
     public void adicionarCategoriaReceita(String nova) {
         if (!categoriasReceita.contains(nova)) {
+            categoriaDAO.adicionar(nova, "RECEITA");
             categoriasReceita.add(nova);
-            salvarDados();
         }
     }
 
     public void removerCategoriaReceita(String cat) {
+        categoriaDAO.remover(cat, "RECEITA");
         categoriasReceita.remove(cat);
-        salvarDados();
     }
 
     public void adicionarCategoriaDespesa(String nova) {
         if (!categoriasDespesa.contains(nova)) {
+            categoriaDAO.adicionar(nova, "DESPESA");
             categoriasDespesa.add(nova);
-            salvarDados();
         }
     }
 
     public void removerCategoriaDespesa(String cat) {
+        categoriaDAO.remover(cat, "DESPESA");
         categoriasDespesa.remove(cat);
-        salvarDados();
-    }
-    // -----------------------------------
-
-    public ObservableList<CartaoConfig> getCartoesConfig() {
-        if (!dadosJaForamCarregados) getContas();
-        return cartoesConfig;
-    }
-
-    public void adicionarCartaoConfig(String nome, int dia) {
-        cartoesConfig.add(new CartaoConfig(nome, dia));
-        salvarDados();
-    }
-    public void removerCartaoConfig(CartaoConfig cartao) {
-        cartoesConfig.remove(cartao);
-        salvarDados();
-    }
-
-    public void adicionarCompraCartao(String desc, BigDecimal total, int parcelas, String cat, String local, String cartao, LocalDate dataPrimeiraFatura) {
-        BigDecimal valorParcela = total.divide(BigDecimal.valueOf(parcelas), 2, java.math.RoundingMode.HALF_UP);
-        for (int i = 0; i < parcelas; i++) {
-            DespesaCartao nova = new DespesaCartao(desc, valorParcela, dataPrimeiraFatura.plusMonths(i), false, cat, local, cartao, i + 1, parcelas);
-            this.contas.add(nova);
-        }
-        salvarDados();
-    }
-
-    public void pagarFaturaCartao(String nomeCartao, LocalDate dataVencimentoFatura) {
-        for (int i = 0; i < contas.size(); i++) {
-            if (contas.get(i) instanceof DespesaCartao dc && dc.nomeCartao().equalsIgnoreCase(nomeCartao) && dc.dataVencimentoFatura().equals(dataVencimentoFatura) && !dc.pago()) {
-                contas.set(i, dc.comStatusPago(true));
-            }
-        }
-        salvarDados();
-    }
-
-    private void salvarDados() {
-        DadosArmazenados dados = prepararDadosParaSalvar();
-        try (Writer writer = new FileWriter(ARQUIVO_DADOS)) {
-            gson.toJson(dados, writer);
-        } catch (IOException e) {
-            LOGGER.log(Level.SEVERE, "Erro ao gravar JSON", e);
-        }
-    }
-
-    private void carregarDados() {
-        DadosArmazenados dados = lerArquivoJson();
-        if (dados != null) {
-            if (dados.fixas != null) this.contas.addAll(dados.fixas);
-            if (dados.variaveis != null) this.contas.addAll(dados.variaveis);
-            if (dados.receitas != null) this.contas.addAll(dados.receitas);
-            if (dados.cartoes != null) this.contas.addAll(dados.cartoes);
-            if (dados.configsCartao != null) this.cartoesConfig.setAll(dados.configsCartao);
-            if (dados.catReceitas != null && !dados.catReceitas.isEmpty()) {
-                this.categoriasReceita.setAll(dados.catReceitas);
-            } else {
-                inicializarCategoriasPadrao();
-            }
-            if (dados.catDespesas != null && !dados.catDespesas.isEmpty()) {
-                this.categoriasDespesa.setAll(dados.catDespesas);
-            } else {
-                if (dados.catReceitas == null) inicializarCategoriasPadrao(); // Garante q chama se apenas uma for null
-            }
-            if (dados.iconesCustomizados != null) {
-                this.mapaIcones.putAll(dados.iconesCustomizados);
-            }
-            this.ultimoMesRecorrencia = dados.ultimoMesRecorrencia;
-        } else {
-            // Primeiro uso (sem arquivo)
-            inicializarCategoriasPadrao();
-            cartoesConfig.add(new CartaoConfig("Cartão Nubank", 10));
-        }
-    }
-
-    private void inicializarCategoriasPadrao() {
-        if (categoriasReceita.isEmpty()) {
-            categoriasReceita.addAll("Salários e rendimentos fixos", "Rendimentos variáveis", "Benefícios e auxílios", "Rendimentos de investimentos", "Outras receitas");
-        }
-        if (categoriasDespesa.isEmpty()) {
-            categoriasDespesa.addAll("Moradia / Habitação", "Alimentação", "Contas básicas / Utilidades", "Transporte", "Saúde", "Educação", "Vestuário e acessórios", "Lazer e entretenimento", "Cuidados pessoais", "Pets", "Dívidas e financiamentos", "Seguros", "Impostos e taxas", "Casa e manutenção", "Doações / Caridade", "Poupança / Investimentos", "Diversos / Imprevistos");
-        }
-    }
-
-    public void verificarRecorrenciaMensal() {
-        getContas();
-        LocalDate hoje = LocalDate.now();
-        YearMonth mesAtual = YearMonth.from(hoje);
-        if (mesAtual.toString().equals(this.ultimoMesRecorrencia)) return;
-
-        YearMonth mesAnterior = mesAtual.minusMonths(1);
-        List<Conta> fixasPassado = contas.stream()
-                .filter(c -> c instanceof ContaFixa && YearMonth.from(c.dataVencimento()).equals(mesAnterior))
-                .toList();
-
-        for (Conta c : fixasPassado) {
-            this.contas.add(new ContaFixa(c.descricao(), c.valor(), c.dataVencimento().plusMonths(1), false, c.categoria(), c.origem(), c.formaPagamento()));
-        }
-        this.ultimoMesRecorrencia = mesAtual.toString();
-        salvarDados();
-    }
-
-    public void adicionarConta(Conta c) { if(c!=null){ contas.add(c); salvarDados(); }}
-    public ObservableList<Conta> getContas() { if(!dadosJaForamCarregados){ carregarDados(); dadosJaForamCarregados=true; } return contas; }
-    public void marcarComoPaga(Conta c) { int i=contas.indexOf(c); if(i>=0){ contas.set(i, c.comStatusPago(true)); salvarDados(); }}
-    public void removerConta(Conta c) { contas.remove(c); salvarDados(); }
-    public void atualizarConta(Conta a, Conta n) { int i=contas.indexOf(a); if(i>=0){ contas.set(i, n); salvarDados(); }}
-    public void recarregarDados() { contas.clear(); cartoesConfig.clear(); categoriasReceita.clear(); categoriasDespesa.clear(); dadosJaForamCarregados=false; getContas(); }
-
-    private DadosArmazenados lerArquivoJson() {
-        if (!Files.exists(Paths.get(ARQUIVO_DADOS))) return null;
-        try (Reader r = new FileReader(ARQUIVO_DADOS)) { return gson.fromJson(r, DadosArmazenados.class); }
-        catch (IOException e) { return null; }
-    }
-
-    private DadosArmazenados prepararDadosParaSalvar() {
-        List<ContaFixa> f = new ArrayList<>();
-        List<ContaVariavel> v = new ArrayList<>();
-        List<Receita> r = new ArrayList<>();
-        List<DespesaCartao> cc = new ArrayList<>();
-
-        for (Conta c : this.contas) {
-            if (c instanceof ContaFixa cf) f.add(cf);
-            else if (c instanceof ContaVariavel cv) v.add(cv);
-            else if (c instanceof Receita re) r.add(re);
-            else if (c instanceof DespesaCartao dc) cc.add(dc);
-        }
-        return new DadosArmazenados(f, v, r, cc, new ArrayList<>(this.cartoesConfig), new ArrayList<>(this.categoriasReceita), new ArrayList<>(this.categoriasDespesa), new HashMap<>(this.mapaIcones), this.ultimoMesRecorrencia);
     }
 
     public void definirIconeCategoria(String categoria, String iconeLiteral) {
+        categoriaDAO.definirIcone(categoria, iconeLiteral);
         mapaIcones.put(categoria, iconeLiteral);
-        salvarDados();
+        // Força atualização visual da lista se necessário
+        // (JavaFX TableView atualiza auto se o item mudar, mas aqui é só mapa auxiliar)
     }
 
     public String getIconeSalvo(String categoria) {
         return mapaIcones.get(categoria);
     }
 
-    public void renomearCategoriaDespesa(String antiga, String nova) {
-        if (antiga.equals(nova)) return;
+    // --- MÉTODOS DE CARTÃO ---
+    public ObservableList<CartaoConfig> getCartoesConfig() {
+        return cartoesConfig;
+    }
 
-        // 1. Atualiza na lista de categorias
-        int idx = categoriasDespesa.indexOf(antiga);
-        if (idx != -1) {
-            categoriasDespesa.set(idx, nova);
+    public void adicionarCartaoConfig(String nome, int dia) {
+        CartaoConfig novo = new CartaoConfig(nome, dia);
+        cartaoDAO.salvar(novo);
+        cartoesConfig.add(novo);
+    }
+
+    public void removerCartaoConfig(CartaoConfig cartao) {
+        cartaoDAO.deletar(cartao.nome());
+        cartoesConfig.remove(cartao);
+    }
+
+    // --- MÉTODOS DE CONTA ---
+    public ObservableList<Conta> getContas() {
+        return contas;
+    }
+
+    public void adicionarConta(Conta c) {
+        if (c != null) {
+            contaDAO.salvar(c);
+            contas.add(c);
+        }
+    }
+
+    public void removerConta(Conta c) {
+        contaDAO.deletar(c);
+        contas.remove(c);
+    }
+
+    public void marcarComoPaga(Conta c) {
+        contaDAO.atualizarStatusPago(c, true);
+        int index = contas.indexOf(c);
+        if (index >= 0) {
+            contas.set(index, c.comStatusPago(true));
+        }
+    }
+
+    public void atualizarConta(Conta antiga, Conta nova) {
+        contaDAO.deletar(antiga);
+        contaDAO.salvar(nova);
+        int index = contas.indexOf(antiga);
+        if (index >= 0) contas.set(index, nova);
+    }
+
+    public void adicionarCompraCartao(String desc, BigDecimal total, int parcelas, String cat, String local, String cartao, LocalDate dataPrimeiraFatura) {
+        BigDecimal valorParcela = total.divide(BigDecimal.valueOf(parcelas), 2, java.math.RoundingMode.HALF_UP);
+        for (int i = 0; i < parcelas; i++) {
+            LocalDate vencimento = dataPrimeiraFatura.plusMonths(i);
+            DespesaCartao nova = new DespesaCartao(desc, valorParcela, vencimento, false, cat, local, cartao, i + 1, parcelas);
+            adicionarConta(nova);
+        }
+    }
+
+    public void pagarFaturaCartao(String nomeCartao, LocalDate dataVencimentoFatura) {
+        List<Conta> paraPagar = contas.stream()
+                .filter(c -> c instanceof DespesaCartao dc
+                        && dc.nomeCartao().equalsIgnoreCase(nomeCartao)
+                        && dc.dataVencimentoFatura().equals(dataVencimentoFatura)
+                        && !dc.pago())
+                .toList();
+
+        for (Conta c : paraPagar) {
+            marcarComoPaga(c);
+        }
+    }
+
+    public void verificarRecorrenciaMensal() {
+        LocalDate hoje = LocalDate.now();
+        String mesAtualStr = java.time.YearMonth.from(hoje).toString(); // "2026-01"
+
+        String ultimoMes = sistemaDAO.getValor("ultimo_mes_recorrencia");
+
+        // Se já rodamos neste mês, não faz nada
+        if (mesAtualStr.equals(ultimoMes)) return;
+
+        System.out.println("Gerando recorrência para: " + mesAtualStr);
+
+        // Busca as contas fixas do mês PASSADO
+        LocalDate mesPassado = hoje.minusMonths(1);
+        List<ContaFixa> fixasAnteriores = contaDAO.listarFixasPorMes(mesPassado);
+
+        for (ContaFixa c : fixasAnteriores) {
+            // Cria uma nova conta igual, mas com data +1 mês e status não pago
+            LocalDate novaData = c.dataVencimento().plusMonths(1);
+
+            ContaFixa nova = new ContaFixa(
+                    c.descricao(),
+                    c.valor(),
+                    novaData,
+                    false, // Reseta para Pendente
+                    c.categoria(),
+                    c.origem(),
+                    c.formaPagamento()
+            );
+
+            adicionarConta(nova); // Salva no banco e na lista
         }
 
-        // 2. Migra o ícone (se houver)
-        if (mapaIcones.containsKey(antiga)) {
-            String icone = mapaIcones.remove(antiga);
-            mapaIcones.put(nova, icone);
-        }
-
-        // 3. Atualiza TODAS as contas antigas que usavam esse nome
-        for (int i = 0; i < contas.size(); i++) {
-            Conta c = contas.get(i);
-            if (c.categoria().equals(antiga)) {
-                // Precisamos recriar a conta com o novo nome de categoria
-                // Isso depende do tipo da conta. Exemplo genérico:
-                // (Aqui você teria que fazer um switch case para recriar o record correto,
-                //  mas para simplificar, vou deixar a lógica abstrata.
-                //  Idealmente, crie um método "comCategoria(String nova)" na interface Conta)
-            }
-        }
-        salvarDados();
+        // Atualiza a flag no banco
+        sistemaDAO.setValor("ultimo_mes_recorrencia", mesAtualStr);
     }
 }

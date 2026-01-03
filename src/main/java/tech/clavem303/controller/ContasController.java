@@ -465,14 +465,17 @@ public class ContasController {
     private void configurarOpcoesFiltro() {
         filtroCategoria.getItems().clear();
         filtroCategoria.getItems().add("Todas");
-        filtroCategoria.getItems().addAll(
-                "Salários e rendimentos fixos", "Rendimentos variáveis", "Benefícios e auxílios",
-                "Rendimentos de investimentos", "Outras receitas",
-                "Moradia / Habitação", "Alimentação", "Contas básicas / Utilidades", "Transporte",
-                "Saúde", "Educação", "Vestuário e acessórios", "Lazer e entretenimento",
-                "Cuidados pessoais", "Pets", "Dívidas e financiamentos", "Seguros", "Impostos e taxas",
-                "Casa e manutenção", "Doações / Caridade", "Poupança / Investimentos", "Diversos / Imprevistos"
-        );
+
+        // AGORA BUSCA DO SERVICE (Banco de Dados) - Centralizado!
+        if (service != null) {
+            filtroCategoria.getItems().addAll(service.getCategoriasReceita());
+            filtroCategoria.getItems().addAll(service.getCategoriasDespesa());
+        }
+
+        // Remove duplicatas e ordena (caso tenha nomes iguais em receitas/despesas)
+        java.util.List<String> unicas = filtroCategoria.getItems().stream().distinct().toList();
+        filtroCategoria.getItems().setAll(unicas);
+
         filtroCategoria.getSelectionModel().select("Todas");
 
         filtroStatus.getItems().clear();

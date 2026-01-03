@@ -41,38 +41,26 @@ public class IconeUtil {
      * Define a cor do ícone baseada no nome da categoria.
      */
     public static String getCorHexPorCategoria(String categoria) {
-        if (categoria == null) return "#78909C"; // Cinza Padrão
-
+        if (categoria == null) return "#78909C";
         String cat = categoria.toLowerCase();
 
-        // 1. Vermelho/Laranja (Comida e Gastos Rápidos)
-        if (cat.contains("fast food") || cat.contains("lanche") || cat.contains("burger") || cat.contains("ifood")) return "#BF360C";
-        if (cat.contains("alimentação") || cat.contains("mercado") || cat.contains("restaurante")) return "#E65100";
+        if (cat.contains("alimentação") || cat.contains("mercado") || cat.contains("fast food")) return "#E65100"; // Laranja
+        if (cat.contains("casa") || cat.contains("moradia") || cat.contains("aluguel")) return "#5D4037"; // Marrom
+        if (cat.contains("contas") || cat.contains("utilidades") || cat.contains("luz")) return "#FBC02D"; // Amarelo
+        if (cat.contains("transporte") || cat.contains("uber") || cat.contains("carro")) return "#1976D2"; // Azul
+        if (cat.contains("saúde") || cat.contains("farmácia")) return "#D32F2F"; // Vermelho
+        if (cat.contains("educação") || cat.contains("curso")) return "#303F9F"; // Indigo
+        if (cat.contains("roupa") || cat.contains("vestuário")) return "#8E24AA"; // Roxo
+        if (cat.contains("lazer") || cat.contains("viagem")) return "#00ACC1"; // Ciano
+        if (cat.contains("pessoal") || cat.contains("beleza")) return "#F06292"; // Rosa
+        if (cat.contains("dívida") || cat.contains("cartão")) return "#B71C1C"; // Vinho
+        if (cat.contains("seguro")) return "#455A64"; // Cinza Azulado
+        if (cat.contains("imposto")) return "#607D8B"; // Cinza
+        if (cat.contains("salário") || cat.contains("renda")) return "#2E7D32"; // Verde
+        if (cat.contains("investimento")) return "#F9A825"; // Dourado
+        if (cat.contains("benefício")) return "#1565C0"; // Azul
 
-        // 2. Marrom (Casa)
-        if (cat.contains("habitação") || cat.contains("casa") || cat.contains("moradia") || cat.contains("aluguel")) return "#5D4037";
-
-        // 3. Azul (Transporte e Serviços)
-        if (cat.contains("transporte") || cat.contains("combustível") || cat.contains("uber") || cat.contains("carro")) return "#1976D2";
-        if (cat.contains("seguros")) return "#455A64";
-
-        // 4. Vermelho (Saúde e Dívidas)
-        if (cat.contains("saúde") || cat.contains("farmácia") || cat.contains("médico")) return "#D32F2F";
-        if (cat.contains("dívida") || cat.contains("financiamento")) return "#B71C1C";
-
-        // 5. Cores Diversas (Lazer, Educação, Pessoal)
-        if (cat.contains("lazer") || cat.contains("cinema") || cat.contains("streaming")) return "#00ACC1";
-        if (cat.contains("educação") || cat.contains("curso") || cat.contains("faculdade")) return "#303F9F";
-        if (cat.contains("cuidados") || cat.contains("beleza") || cat.contains("estética")) return "#F06292";
-        if (cat.contains("pets") || cat.contains("veterinário")) return "#795548";
-        if (cat.contains("vestuário") || cat.contains("roupa")) return "#8E24AA";
-
-        // 6. Receitas (Verdes e Dourados)
-        if (cat.contains("salário") || cat.contains("rendimento")) return "#2E7D32";
-        if (cat.contains("investimento") || cat.contains("poupança")) return "#F9A825";
-        if (cat.contains("benefício") || cat.contains("auxílio")) return "#1565C0";
-
-        return "#FFC107"; // Amarelo padrão para não categorizados
+        return "#757575"; // Cinza para Diversos/Outros
     }
 
     /**
@@ -93,32 +81,27 @@ public class IconeUtil {
         }
 
         // 2. Se ainda estiver com o padrão, tenta adivinhar pelas palavras-chave
-        if (iconeLiteral.equals("fas-tag") && categoria != null) {
+        if (categoria != null) {
             String cat = categoria.toLowerCase();
 
-            // --- REGRAS AUTOMÁTICAS ---
-            if (cat.contains("salário") || cat.contains("rendimento")) iconeLiteral = "fas-money-bill-wave";
-            else if (cat.contains("investimento") || cat.contains("poupança")) iconeLiteral = "fas-piggy-bank";
-            else if (cat.contains("casa") || cat.contains("moradia") || cat.contains("aluguel")) iconeLiteral = "fas-home";
-
-                // Regra do Fast Food solicitada
-            else if (cat.contains("fast food") || cat.contains("lanche") || cat.contains("burger") || cat.contains("ifood")) iconeLiteral = "fas-hamburger";
-            else if (cat.contains("alimentação") || cat.contains("restaurante")) iconeLiteral = "fas-utensils";
-            else if (cat.contains("mercado")) iconeLiteral = "fas-shopping-cart";
-
-            else if (cat.contains("transporte") || cat.contains("carro") || cat.contains("combustível")) iconeLiteral = "fas-car";
-            else if (cat.contains("saúde") || cat.contains("farmácia")) iconeLiteral = "fas-heartbeat";
-            else if (cat.contains("lazer") || cat.contains("viagem")) iconeLiteral = "fas-umbrella-beach";
-            else if (cat.contains("educação") || cat.contains("escola")) iconeLiteral = "fas-graduation-cap";
-            else if (cat.contains("vestuário") || cat.contains("roupa")) iconeLiteral = "fas-tshirt";
+            if (cat.contains("salário") || cat.contains("renda")) iconeLiteral = "fas-money-bill-wave";
+            else if (cat.contains("investimento")) iconeLiteral = "fas-piggy-bank";
+            else if (cat.contains("casa") || cat.contains("moradia")) iconeLiteral = "fas-home";
+            else if (cat.contains("alimentação")) iconeLiteral = "fas-utensils";
+            else if (cat.contains("contas")) iconeLiteral = "fas-lightbulb"; // Novo
+            else if (cat.contains("transporte")) iconeLiteral = "fas-car";
+            else if (cat.contains("saúde")) iconeLiteral = "fas-heartbeat";
+            else if (cat.contains("educação")) iconeLiteral = "fas-graduation-cap";
+            else if (cat.contains("roupa")) iconeLiteral = "fas-tshirt";
+            else if (cat.contains("lazer")) iconeLiteral = "fas-umbrella-beach";
+            else if (cat.contains("pessoal")) iconeLiteral = "fas-spa";
             else if (cat.contains("pets")) iconeLiteral = "fas-paw";
-            else if (cat.contains("beleza")) iconeLiteral = "fas-spa";
-            else if (cat.contains("cartão") || cat.contains("dívida")) iconeLiteral = "fas-credit-card";
-            else if (cat.contains("seguros")) iconeLiteral = "fas-shield-alt";
-            else if (cat.contains("imposto") || cat.contains("taxa")) iconeLiteral = "fas-file-invoice-dollar";
-            else if (cat.contains("manutenção") || cat.contains("ferramenta")) iconeLiteral = "fas-tools";
+            else if (cat.contains("dívida")) iconeLiteral = "fas-credit-card";
+            else if (cat.contains("seguro")) iconeLiteral = "fas-shield-alt";
+            else if (cat.contains("imposto")) iconeLiteral = "fas-file-invoice-dollar";
+            else if (cat.contains("manutenção")) iconeLiteral = "fas-tools";
             else if (cat.contains("doação")) iconeLiteral = "fas-hands-helping";
-            else if (cat.contains("academia") || cat.contains("esporte")) iconeLiteral = "fas-dumbbell";
+            else if (cat.contains("diversos")) iconeLiteral = "fas-box-open";
         }
 
         // 3. Monta o objeto visual
