@@ -11,7 +11,7 @@ public record DespesaCartao(
         boolean pago,
         String categoria,
         String origem,
-        Integer idCartao,   // ID do cartão (FK)
+        Integer idCartao,   // "ID" do cartão (FK)
         String nomeCartaoExibicao, // Nome (Visual)
         int numeroParcela,
         int totalParcelas

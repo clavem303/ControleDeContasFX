@@ -16,7 +16,7 @@ public record ContaVariavel(
         String formaPagamento
 ) implements Conta {
 
-    // Construtor Auxiliar para Criação (Calcula total e ID null)
+    // Construtor Auxiliar para Criação (Calcula total e "ID" null)
     public ContaVariavel(String descricao, LocalDate dataVencimento, BigDecimal quantidade, BigDecimal valorUnitario, String categoria, String origem, String formaPagamento) {
         this(null, descricao, quantidade.multiply(valorUnitario), dataVencimento, true, quantidade, valorUnitario, categoria, origem, formaPagamento);
     }

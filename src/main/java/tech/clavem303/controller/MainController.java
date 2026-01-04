@@ -425,7 +425,7 @@ public class MainController {
         topoContainer.getChildren().addAll(donutContainer, painelMensagem);
 
         VBox listaCategorias = new VBox(12);
-        Label tituloLista = new Label("Top 5 de gastos do Mês");
+        Label tituloLista = new Label("Cinco Maiores Gastos");
         tituloLista.setStyle("-fx-font-size: 18px; -fx-font-weight: 800; -fx-text-fill: #37474F;");
         listaCategorias.getChildren().add(tituloLista);
 
@@ -484,7 +484,7 @@ public class MainController {
         painel.setStyle("-fx-background-color: white; -fx-background-radius: 20; -fx-padding: 20;"); // Padding menor
         painel.setEffect(new DropShadow(20, Color.rgb(0,0,0,0.05)));
 
-        Label titulo = new Label("Status de Pagamentos");
+        Label titulo = new Label("Aguardando Pagamento");
         titulo.setStyle("-fx-font-size: 20px; -fx-font-weight: 800; -fx-text-fill: #37474F;");
         painel.getChildren().add(titulo);
 
@@ -521,7 +521,13 @@ public class MainController {
             String corBase = c instanceof DespesaCartao ? "#673AB7" : IconeUtil.getCorHexPorCategoria(c.categoria());
             iconBox.setStyle("-fx-background-color: " + corBase + "20; -fx-background-radius: 10;");
 
-            FontIcon ic = new FontIcon(c instanceof DespesaCartao ? "far-credit-card" : "fas-file-invoice");
+            FontIcon ic;
+            if (c instanceof DespesaCartao) {
+                ic = new FontIcon("far-credit-card");
+            } else {
+                // CORREÇÃO VISUAL: Usa o ícone da categoria (ex: Investimento) em vez do genérico
+                ic = IconeUtil.getIconePorCategoria(c.categoria(), service);
+            }
             ic.setIconColor(Color.web(corBase));
             ic.setIconSize(20);
             iconBox.getChildren().add(ic);

@@ -32,7 +32,7 @@ public class ValidadorFX {
             // Regex:
             // \\d* -> Começa com números (opcional)
             // ([\\.,]\\d*)? -> Pode ter UM ponto ou vírgula seguido de números (opcional)
-            if (newText.matches("\\d*([\\.,]\\d*)?")) {
+            if (newText.matches("\\d*([.,]\\d*)?")) {
                 return change;
             }
             return null;

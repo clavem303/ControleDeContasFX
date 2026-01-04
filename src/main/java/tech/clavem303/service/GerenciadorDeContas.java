@@ -7,9 +7,7 @@ import tech.clavem303.model.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -104,9 +102,9 @@ public class GerenciadorDeContas {
 
     private void inicializarCategoriasPadraoSeNecessario() {
         if (categoriaDAO.estaVazia()) {
-            java.text.Collator collator = java.text.Collator.getInstance(new java.util.Locale("pt", "BR"));
+            java.text.Collator collator = java.text.Collator.getInstance(Locale.of("pt", "BR"));
 
-            java.util.Map<String, String> receitas = new java.util.TreeMap<>(collator);
+            java.util.Map<String, String> receitas = new TreeMap<>(collator);
             receitas.put("Salário", "fas-money-bill-wave");
             receitas.put("Renda Extra", "fas-plus-circle");
             receitas.put("Investimentos", "fas-chart-line");
@@ -114,7 +112,7 @@ public class GerenciadorDeContas {
             receitas.put("Outros", "fas-tag");
             receitas.forEach((nome, icone) -> criarCatPadrao(nome, icone, "RECEITA"));
 
-            java.util.Map<String, String> despesas = new java.util.TreeMap<>(collator);
+            java.util.Map<String, String> despesas = new TreeMap<>(collator);
             despesas.put("Água", "fas-faucet");
             despesas.put("Luz", "fas-lightbulb");
             despesas.put("Celular", "fas-mobile-alt");
@@ -207,10 +205,10 @@ public class GerenciadorDeContas {
     // --- CORREÇÃO CRÍTICA DO DELETE AQUI ---
     public void adicionarCartaoConfig(String nome, int dia) {
         try {
-            // 1. Cria objeto com ID nulo
-            CartaoConfig novo = new CartaoConfig(null, nome, dia);
+            // 1. Cria objeto com "ID" nulo
+            CartaoConfig novo = new CartaoConfig(nome, dia);
 
-            // 2. Salva e RECEBE o objeto atualizado (com ID gerado pelo banco)
+            // 2. Salva e RECEBE o objeto atualizado (com "ID" gerado pelo banco)
             CartaoConfig salvo = cartaoDAO.salvar(novo);
 
             // 3. Adiciona na lista da tela o objeto QUE TEM ID
@@ -253,7 +251,6 @@ public class GerenciadorDeContas {
 
             for (int i = 1; i <= numParcelas; i++) {
                 DespesaCartao parcela = new DespesaCartao(
-                        null,
                         descricao,
                         valorParcela,
                         dataPrimeiraParcela.plusMonths(i - 1),
@@ -309,7 +306,6 @@ public class GerenciadorDeContas {
                 if (c.isRecorrente()) {
                     LocalDate novaData = c.dataVencimento().plusMonths(1);
                     ContaFixa nova = new ContaFixa(
-                            null,
                             c.descricao(),
                             c.valor(),
                             novaData,

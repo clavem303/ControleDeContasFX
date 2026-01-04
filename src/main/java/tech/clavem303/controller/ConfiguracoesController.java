@@ -303,7 +303,7 @@ public class ConfiguracoesController {
     private void fazerBackup() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Salvar Backup do Banco de Dados");
-        fileChooser.setInitialFileName("backup_clavem303_" + LocalDate.now() + ".db");
+        fileChooser.setInitialFileName("backup_clv303finance" + LocalDate.now() + ".db");
         // Filtro para arquivos DB
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Banco de Dados SQLite", "*.db"));
 

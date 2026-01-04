@@ -32,12 +32,10 @@ public class App extends Application {
         // 2. A SOLUÇÃO NUCLEAR:
         // Agenda a maximização para o final da fila de processamento gráfico.
         // Isso dá tempo ao Linux/Windows de criar a janela antes de tentar esticá-la.
-        Platform.runLater(() -> {
-            stage.setMaximized(true);
-        });
+        Platform.runLater(() -> stage.setMaximized(true));
     }
 
     public static void main(String[] args) {
-        launch();
+        launch(args);
     }
 }

@@ -15,7 +15,7 @@ public record ContaFixa(
         boolean recorrente
 ) implements Conta {
 
-    // Construtor para novas contas (ID null)
+    // Construtor para novas contas ("ID" null)
     public ContaFixa(String descricao, BigDecimal valor, LocalDate dataVencimento, boolean pago, String categoria, String origem, String formaPagamento, boolean recorrente) {
         this(null, descricao, valor, dataVencimento, pago, categoria, origem, formaPagamento, recorrente);
     }

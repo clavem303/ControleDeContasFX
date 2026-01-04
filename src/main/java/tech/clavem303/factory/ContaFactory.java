@@ -23,11 +23,11 @@ public class ContaFactory {
     ) {
         String tipoUpper = tipo.toUpperCase();
 
-        // OBS: Passamos 'null' como primeiro argumento (ID) pois é uma nova conta
+        // OBS: Passamos 'null' como primeiro argumento ("ID") pois é uma nova conta
         return switch (tipoUpper) {
-            case "FIXA", "DESPESA FIXA" -> new ContaFixa(null, descricao, valor, dataVencimento, false, categoria, origem, formaPagamento, true);
+            case "FIXA", "DESPESA FIXA" -> new ContaFixa(descricao, valor, dataVencimento, false, categoria, origem, formaPagamento, true);
 
-            case "RECEITA" -> new Receita(null, descricao, valor, dataVencimento, false, categoria, origem, formaPagamento);
+            case "RECEITA" -> new Receita(descricao, valor, dataVencimento, false, categoria, origem, formaPagamento);
 
             case "VARIAVEL", "DESPESA VARIÁVEL" -> {
                 if (quantidade == null || valorUnitario == null) {

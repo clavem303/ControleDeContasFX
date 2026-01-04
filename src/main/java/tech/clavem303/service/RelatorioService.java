@@ -14,8 +14,12 @@ import java.text.NumberFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class RelatorioService {
+
+    private static final Logger LOGGER = Logger.getLogger(RelatorioService.class.getName());
 
     public void gerarRelatorioPDF(File arquivoDestino, List<Conta> listaContas) throws IOException, DocumentException {
         // CONFIGURAÇÃO A4 (Margens ajustadas)
@@ -56,7 +60,8 @@ public class RelatorioService {
         table.setHeaderRows(1);
 
         // Dados
-        NumberFormat nf = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
+        // CORREÇÃO: new Locale para compatibilidade
+        NumberFormat nf = NumberFormat.getCurrencyInstance(Locale.of("pt", "BR"));
         DateTimeFormatter df = DateTimeFormatter.ofPattern("dd/MM/yyyy");
         BigDecimal total = BigDecimal.ZERO;
 
@@ -146,7 +151,8 @@ public class RelatorioService {
                         document.right(), document.bottom() - 25, 0);
                 cb.restoreState();
             } catch (Exception e) {
-                e.printStackTrace();
+                // CORREÇÃO: Log em vez de printStackTrace
+                LOGGER.log(Level.SEVERE, "Erro ao gerar rodapé da página " + writer.getPageNumber(), e);
             }
         }
     }
