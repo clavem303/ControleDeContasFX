@@ -30,11 +30,16 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.stream.Collectors;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class MainController {
+
+    // Logger para substituir o printStackTrace
+    private static final Logger LOGGER = Logger.getLogger(MainController.class.getName());
+    // Locale constante para compatibilidade e performance
+    private static final Locale PT_BR = Locale.of("pt", "BR");
 
     @FXML private BorderPane contentArea;
     private final GerenciadorDeContas service = new GerenciadorDeContas();
@@ -60,7 +65,11 @@ public class MainController {
             if (controller instanceof ConfiguracoesController c) c.setService(this.service);
 
             contentArea.setCenter(view);
-        } catch (IOException e) { e.printStackTrace(); }
+        } catch (IOException e) {
+            // CORREÇÃO: Log + Alerta
+            LOGGER.log(Level.SEVERE, "Erro ao navegar para: " + fxml, e);
+            mostrarAlerta("Erro de Navegação", "Não foi possível carregar a tela solicitada.");
+        }
     }
 
     @FXML
@@ -82,14 +91,18 @@ public class MainController {
                 Platform.exit();
                 System.exit(0);
             }
-        } catch (IOException e) { e.printStackTrace(); }
+        } catch (IOException e) {
+            // CORREÇÃO: Log + Alerta
+            LOGGER.log(Level.SEVERE, "Erro ao abrir diálogo de sair", e);
+            mostrarAlerta("Erro", "Falha ao tentar sair do sistema.");
+        }
     }
 
     // --- LÓGICA DO DASHBOARD ---
 
     private void carregarDashboard() {
-        VBox container = new VBox(25);
-        container.setPadding(new javafx.geometry.Insets(30));
+        VBox container = new VBox(20);
+        container.setPadding(new javafx.geometry.Insets(20));
 
         // 1. CABEÇALHO
         container.getChildren().add(criarCabecalhoDashboard());
@@ -97,12 +110,12 @@ public class MainController {
         // 2. CÁLCULOS
         LocalDate hoje = LocalDate.now();
         YearMonth mesAtual = YearMonth.from(hoje);
-        LocalDate inicioMes = mesAtual.atDay(1); // Data de corte para saldo inicial
+        LocalDate inicioMes = mesAtual.atDay(1);
 
         List<Conta> todas = service.getContas();
 
-        BigDecimal saldoTotal = BigDecimal.ZERO;   // Saldo atual (Banco)
-        BigDecimal saldoInicial = BigDecimal.ZERO; // Saldo na virada do mês (Recurso Anterior)
+        BigDecimal saldoTotal = BigDecimal.ZERO;
+        BigDecimal saldoInicial = BigDecimal.ZERO;
 
         BigDecimal entradasMes = BigDecimal.ZERO;
         BigDecimal saidasMes = BigDecimal.ZERO;
@@ -111,23 +124,19 @@ public class MainController {
         for (Conta c : todas) {
             boolean isMesAtual = YearMonth.from(c.dataVencimento()).equals(mesAtual);
 
-            // Cálculos de Saldo (Apenas pagos contam)
             if (c.pago()) {
                 if (c instanceof Receita) saldoTotal = saldoTotal.add(c.valor());
                 else saldoTotal = saldoTotal.subtract(c.valor());
 
-                // Se foi pago e venceu ANTES deste mês, compõe o Saldo Inicial
                 if (c.dataVencimento().isBefore(inicioMes)) {
                     if (c instanceof Receita) saldoInicial = saldoInicial.add(c.valor());
                     else saldoInicial = saldoInicial.subtract(c.valor());
                 }
             }
 
-            // Cálculos do Mês (Pagos ou não)
             if (c instanceof Receita && isMesAtual) entradasMes = entradasMes.add(c.valor());
             if (!(c instanceof Receita) && isMesAtual) saidasMes = saidasMes.add(c.valor());
 
-            // Pendências
             if (!(c instanceof Receita) && !c.pago()) {
                 if (isMesAtual || c.dataVencimento().isBefore(hoje)) {
                     aPagarMes = aPagarMes.add(c.valor());
@@ -136,7 +145,7 @@ public class MainController {
         }
 
         // 3. CARDS COLORIDOS
-        HBox cardsBox = new HBox(20);
+        HBox cardsBox = new HBox(15);
         cardsBox.setAlignment(Pos.CENTER_LEFT);
 
         String corSaldo = saldoTotal.compareTo(BigDecimal.ZERO) < 0 ? "#D32F2F" : "#2196F3";
@@ -155,21 +164,20 @@ public class MainController {
         container.getChildren().add(cardsBox);
 
         // 4. ÁREA INFERIOR
-        HBox bottomBox = new HBox(30);
+        HBox bottomBox = new HBox(20);
 
-        // Passamos o saldoInicial para o gráfico comparar (Recurso vs Despesa)
         VBox painelGrafico = criarPainelDespesasPorCategoriaMes(entradasMes, saldoInicial, mesAtual);
         HBox.setHgrow(painelGrafico, Priority.ALWAYS);
 
         VBox listaLateral = criarListaPendencias();
-        listaLateral.setMinWidth(350);
+        listaLateral.setMinWidth(380);
 
         bottomBox.getChildren().addAll(painelGrafico, listaLateral);
         container.getChildren().add(bottomBox);
 
         ScrollPane scroll = new ScrollPane(container);
         scroll.setFitToWidth(true);
-        scroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
         scroll.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
         contentArea.setCenter(scroll);
     }
@@ -177,7 +185,7 @@ public class MainController {
     // --- MÉTODOS VISUAIS ---
 
     private VBox criarCard(String titulo, BigDecimal valor, String cor, String icone) {
-        VBox card = new VBox(10);
+        VBox card = new VBox(8);
         card.setMaxWidth(Double.MAX_VALUE);
         card.setStyle("-fx-background-color: " + cor + "; -fx-background-radius: 20; -fx-padding: 20;");
         card.setAlignment(Pos.CENTER);
@@ -186,212 +194,242 @@ public class MainController {
         card.setEffect(sombra);
 
         FontIcon icon = new FontIcon(icone);
-        icon.setIconSize(40);
+        icon.setIconSize(44);
         icon.setIconColor(Color.WHITE);
 
         Label lblTitulo = new Label(titulo);
-        lblTitulo.setStyle("-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 20px;");
+        lblTitulo.setStyle("-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 22px;");
 
-        Label lblValor = new Label(NumberFormat.getCurrencyInstance(new Locale("pt", "BR")).format(valor));
-        lblValor.setStyle("-fx-text-fill: white; -fx-font-size: 38px; -fx-font-weight: 900;");
+        // CORREÇÃO: Uso da constante PT_BR
+        Label lblValor = new Label(NumberFormat.getCurrencyInstance(PT_BR).format(valor));
+        lblValor.setStyle("-fx-text-fill: white; -fx-font-size: 42px; -fx-font-weight: 900;");
 
         card.getChildren().addAll(icon, lblTitulo, lblValor);
         return card;
     }
 
     private VBox criarPainelDespesasPorCategoriaMes(BigDecimal totalEntradasMes, BigDecimal saldoInicial, YearMonth mesAtual) {
-        VBox card = new VBox(25);
-        card.setStyle("-fx-background-color: white; -fx-background-radius: 20; -fx-padding: 30;");
+        VBox card = new VBox(15);
+        card.setStyle("-fx-background-color: white; -fx-background-radius: 20; -fx-padding: 25;");
         card.setEffect(new DropShadow(20, Color.rgb(0, 0, 0, 0.05)));
 
         Map<String, BigDecimal> mapa = new HashMap<>();
-        BigDecimal totalDespesasMes = BigDecimal.ZERO;
+
+        // Separação de Gasto vs Investimento
+        BigDecimal totalConsumoMes = BigDecimal.ZERO;
+        BigDecimal totalInvestimentoMes = BigDecimal.ZERO;
 
         for (Conta c : service.getContas()) {
             if (!(c instanceof Receita) && YearMonth.from(c.dataVencimento()).equals(mesAtual)) {
-                totalDespesasMes = totalDespesasMes.add(c.valor());
+                // Soma no mapa geral para a lista
                 mapa.put(c.categoria(), mapa.getOrDefault(c.categoria(), BigDecimal.ZERO).add(c.valor()));
+
+                // Verifica se é investimento (case insensitive)
+                if (c.categoria().toLowerCase().contains("investimento")) {
+                    totalInvestimentoMes = totalInvestimentoMes.add(c.valor());
+                } else {
+                    totalConsumoMes = totalConsumoMes.add(c.valor());
+                }
             }
         }
 
-        // --- LÓGICA FINANCEIRA REVISADA ---
+        BigDecimal totalSaidasMes = totalConsumoMes.add(totalInvestimentoMes);
         BigDecimal recursosDisponiveis = saldoInicial.add(totalEntradasMes);
 
-        double porcentagemReal;   // Valor matemático (ex: 0.85 para 85%)
+        // Porcentagens
+        double pctConsumo = 0.0;
+        double pctInvestimento = 0.0;
         boolean estourado = false;
 
         if (recursosDisponiveis.compareTo(BigDecimal.ZERO) <= 0) {
-            // Sem recursos e com despesa = infinito
-            if (totalDespesasMes.compareTo(BigDecimal.ZERO) > 0) {
-                porcentagemReal = 99.0;
+            if (totalSaidasMes.compareTo(BigDecimal.ZERO) > 0) {
+                pctConsumo = 0.99; // Força visual
                 estourado = true;
-            } else {
-                porcentagemReal = 0.0;
             }
         } else {
-            porcentagemReal = totalDespesasMes.doubleValue() / recursosDisponiveis.doubleValue();
-            if (porcentagemReal >= 1.0) {
+            pctConsumo = totalConsumoMes.doubleValue() / recursosDisponiveis.doubleValue();
+            pctInvestimento = totalInvestimentoMes.doubleValue() / recursosDisponiveis.doubleValue();
+
+            if ((pctConsumo + pctInvestimento) >= 1.0) {
                 estourado = true;
             }
         }
 
-        // --- GATILHOS E MENSAGENS (NOVAS REGRAS) ---
+        // --- LÓGICA DE STATUS CORRIGIDA ---
         String corTema, tituloStatus, msgConselho, bgMensagem;
         String textoPercentual;
 
+        // Calcula o total comprometido (Gasto + Investimento)
+        double pctTotalUsado = pctConsumo + pctInvestimento;
+
+        if (recursosDisponiveis.compareTo(BigDecimal.ZERO) <= 0 && totalSaidasMes.compareTo(BigDecimal.ZERO) > 0) {
+            textoPercentual = ">100%";
+        } else {
+            textoPercentual = String.format("%.0f%%", pctTotalUsado * 100);
+        }
+
+        // 1. Prioridade Máxima: Estourou o orçamento
         if (estourado) {
-            // >= 100% - CATASTROFE
-            corTema = "#B71C1C"; // Vermelho Escuro/Vinho
+            corTema = "#B71C1C"; // Vinho
             tituloStatus = "INSUSTENTÁVEL";
             bgMensagem = "#FFEBEE";
-            msgConselho = "Situação insustentável!\n Seus gastos excederam a renda.\n Pare e planeje agora.";
+            msgConselho = "Situação insustentável! Seus gastos excederam a renda. Pare e planeje.";
+        }
 
-            if (recursosDisponiveis.compareTo(BigDecimal.ZERO) <= 0) textoPercentual = ">100%";
-            else textoPercentual = String.format("%.0f%%", porcentagemReal * 100);
-
-        } else if (porcentagemReal > 0.90) {
-            // 90% a 99% - CRÍTICO (Alerta Vermelho)
-            corTema = "#D32F2F"; // Vermelho Padrão
+        // 2. Prioridade Alta: Margem Perigosa (Total > 90%)
+        // Mesmo investindo, se sobrar menos de 10%, é considerado Crítico por falta de liquidez imediata.
+        else if (pctTotalUsado > 0.90) {
+            corTema = "#D32F2F"; // Vermelho
             tituloStatus = "CRÍTICO";
             bgMensagem = "#FFEBEE";
-            msgConselho = "Alerta Vermelho! Gastos acima de 90%. Risco alto de endividamento se houver imprevistos.";
-            textoPercentual = String.format("%.0f%%", porcentagemReal * 100);
+            if (totalInvestimentoMes.compareTo(BigDecimal.ZERO) > 0) {
+                msgConselho = "Cuidado! Você está investindo, mas comprometeu mais de 90% da renda. Mantenha liquidez.";
+            } else {
+                msgConselho = "Alerta Vermelho! Mais de 90% da renda comprometida. Risco alto.";
+            }
+        }
 
-        } else if (porcentagemReal > 0.80) {
-            // 80% a 90% - ALERTA (Amarelo/Laranja)
-            corTema = "#F57C00"; // Laranja Escuro
+        // 3. Status Investidor (Investindo E Total <= 90%)
+        else if (totalInvestimentoMes.compareTo(BigDecimal.ZERO) > 0) {
+            corTema = "#FBC02D"; // Dourado
+            tituloStatus = "INVESTIDOR";
+            bgMensagem = "#FFFDE7";
+            msgConselho = "Parabéns! Você está investindo no seu futuro e mantendo as contas em dia.";
+        }
+
+        // 4. Regras de Consumo Padrão (Sem investimento)
+        else if (pctConsumo > 0.80) {
+            corTema = "#F57C00"; // Laranja
             tituloStatus = "ATENÇÃO";
             bgMensagem = "#FFF3E0";
-            msgConselho = "Cuidado. Você ultrapassou o limite ideal de 80%. Tente reduzir gastos não essenciais.";
-            textoPercentual = String.format("%.0f%%", porcentagemReal * 100);
-
-        } else if (porcentagemReal > 0.70) {
-            // 70% a 80% - SAUDÁVEL
+            msgConselho = "Cuidado. Seus gastos de consumo passaram de 80%. Tente economizar.";
+        } else if (pctConsumo > 0.70) {
             corTema = "#1976D2"; // Azul
             tituloStatus = "SAUDÁVEL";
             bgMensagem = "#E3F2FD";
-            msgConselho = "Equilíbrio ideal (regra 80/20). Você está gastando dentro do planejado. Poupe ou invista!";
-            textoPercentual = String.format("%.0f%%", porcentagemReal * 100);
-
+            msgConselho = "Equilíbrio ideal. Gastos sob controle.";
         } else {
-            // <= 70% - EXCELENTE
-            corTema = "#388E3C"; // Verde Forte
+            corTema = "#388E3C"; // Verde
             tituloStatus = "EXCELENTE";
             bgMensagem = "#E8F5E9";
-            msgConselho = "Parabéns! Gastos abaixo de 70%. Ótima oportunidade de investimento e reserva.";
-            textoPercentual = String.format("%.0f%%", porcentagemReal * 100);
+            msgConselho = "Ótimo controle! Aproveite a sobra para começar a investir.";
         }
 
-        HBox topoContainer = new HBox(30);
+        HBox topoContainer = new HBox(20);
         topoContainer.setAlignment(Pos.CENTER_LEFT);
 
-        // --- LÓGICA VISUAL DOS GRÁFICOS (EMPILHADOS) ---
         StackPane donutContainer = new StackPane();
 
-        // 1. GRÁFICO BASE (FUNDO)
+        // 1. GRÁFICO (AGORA COM 3 FATIAS)
         ObservableList<PieChart.Data> dadosBase = FXCollections.observableArrayList();
         PieChart graficoBase = new PieChart(dadosBase);
         graficoBase.setLabelsVisible(false);
         graficoBase.setLegendVisible(false);
         graficoBase.setStartAngle(90);
-        graficoBase.setMaxSize(220, 220);
+        graficoBase.setMinSize(230, 230);
+        graficoBase.setMaxSize(230, 230);
 
         if (!estourado) {
-            // Normal: Gasto (Cor Tema) + Livre (Cinza Claro para contraste neutro)
-            PieChart.Data sliceGasto = new PieChart.Data("Gasto", porcentagemReal);
-            PieChart.Data sliceLivre = new PieChart.Data("Livre", 1.0 - porcentagemReal);
-            dadosBase.addAll(sliceGasto, sliceLivre);
+            PieChart.Data sliceGasto = new PieChart.Data("Gasto", pctConsumo);
+            PieChart.Data sliceInv = new PieChart.Data("Investimento", pctInvestimento);
+            PieChart.Data sliceLivre = new PieChart.Data("Livre", 1.0 - pctTotalUsado);
 
-            sliceGasto.getNode().setStyle("-fx-pie-color: " + corTema + ";");
-            // Fundo neutro (cinza claro) para destacar a cor do status
+            dadosBase.addAll(sliceGasto, sliceInv, sliceLivre);
+
+            // Cores das fatias
+            String corGasto = pctConsumo > 0.8 ? "#F57C00" : "#1976D2";
+            if (pctConsumo <= 0.7) corGasto = "#4CAF50"; // Verde se for pouco gasto
+
+            // Se estiver no modo INVESTIDOR, usa cores especiais
+            if (tituloStatus.equals("INVESTIDOR")) {
+                corGasto = "#4CAF50"; // Gasto vira verde
+            }
+
+            sliceGasto.getNode().setStyle("-fx-pie-color: " + corGasto + ";");
+            sliceInv.getNode().setStyle("-fx-pie-color: #FBC02D;"); // Dourado
             sliceLivre.getNode().setStyle("-fx-pie-color: #ECEFF1;");
         } else {
-            // Estourado: Fundo totalmente da cor do tema
+            // Estourado
             PieChart.Data sliceFull = new PieChart.Data("Base", 1.0);
             dadosBase.add(sliceFull);
-            sliceFull.getNode().setStyle("-fx-pie-color: " + corTema + ";");
+            sliceFull.getNode().setStyle("-fx-pie-color: #B71C1C;");
         }
-
         donutContainer.getChildren().add(graficoBase);
 
-        // 2. GRÁFICO OVERLAY (SOBREPOSIÇÃO PARA O EXCESSO)
+        // 2. GRÁFICO OVERLAY (PARA ESTOURO)
         if (estourado) {
-            // Calcula quanto passou de 100%
-            double excesso = porcentagemReal % 1.0;
-            if (excesso == 0 && porcentagemReal > 0) excesso = 1.0;
+            // CORREÇÃO: Usar 'pctTotalUsado' em vez da variável antiga 'porcentagemReal'
+            double excesso = pctTotalUsado % 1.0;
+            if (excesso == 0 && pctTotalUsado > 0) excesso = 1.0;
 
             ObservableList<PieChart.Data> dadosOverlay = FXCollections.observableArrayList();
             PieChart.Data sliceExcesso = new PieChart.Data("Excesso", excesso);
             PieChart.Data sliceTransparente = new PieChart.Data("Transparente", 1.0 - excesso);
-
             dadosOverlay.addAll(sliceExcesso, sliceTransparente);
 
             PieChart graficoOverlay = new PieChart(dadosOverlay);
             graficoOverlay.setLabelsVisible(false);
             graficoOverlay.setLegendVisible(false);
             graficoOverlay.setStartAngle(90);
-            graficoOverlay.setMaxSize(220, 220);
+            graficoOverlay.setMinSize(230, 230);
+            graficoOverlay.setMaxSize(230, 230);
 
-            // Cor Vermelho Quase Preto para destacar o excesso sobre o vermelho
             sliceExcesso.getNode().setStyle("-fx-pie-color: #5D1010;");
             sliceTransparente.getNode().setStyle("-fx-pie-color: transparent;");
-
             donutContainer.getChildren().add(graficoOverlay);
         }
 
-        // 3. BURACO DO DONUT
-        javafx.scene.shape.Circle buraco = new javafx.scene.shape.Circle(80);
+        // 3. BURACO
+        javafx.scene.shape.Circle buraco = new javafx.scene.shape.Circle(85);
         buraco.setFill(Color.WHITE);
 
-        // 4. TEXTO DO CENTRO
         VBox textoCentro = new VBox(-5);
         textoCentro.setAlignment(Pos.CENTER);
-
         Label lblPct = new Label(textoPercentual);
-        lblPct.setStyle("-fx-font-size: 38px; -fx-font-weight: 900; -fx-text-fill: " + (estourado ? "#B71C1C" : corTema) + ";");
-        Label lblDesc = new Label("GASTO (MÊS)");
+        lblPct.setStyle("-fx-font-size: 42px; -fx-font-weight: 900; -fx-text-fill: " + corTema + ";");
+        Label lblDesc = new Label("COMPROMETIDO");
         lblDesc.setStyle("-fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: #90A4AE;");
         textoCentro.getChildren().addAll(lblPct, lblDesc);
 
         donutContainer.getChildren().addAll(buraco, textoCentro);
 
         // Caixa de Mensagem
-        // 1. O Painel Principal alinha tudo ao TOPO
         VBox painelMensagem = new VBox(10);
         painelMensagem.setAlignment(Pos.TOP_CENTER);
-        painelMensagem.setStyle("-fx-background-color: " + bgMensagem + "; -fx-background-radius: 15; -fx-padding: 25;");
+        painelMensagem.setStyle("-fx-background-color: " + bgMensagem + "; -fx-background-radius: 15; -fx-padding: 20;");
         HBox.setHgrow(painelMensagem, Priority.ALWAYS);
 
-        // 2. Cabeçalho (Ícone + Título)
         HBox cabecalhoMsg = new HBox(10);
         cabecalhoMsg.setAlignment(Pos.CENTER);
-        cabecalhoMsg.setMinHeight(40);
+        cabecalhoMsg.setMinHeight(35);
 
-        FontIcon iconeLampada = new FontIcon("fas-lightbulb");
+        // Ícone diferente para Investidor
+        String iconeStatus = tituloStatus.equals("INVESTIDOR") ? "fas-medal" : "fas-lightbulb";
+
+        FontIcon iconeLampada = new FontIcon(iconeStatus);
         iconeLampada.setIconColor(Color.web(corTema));
-        iconeLampada.setIconSize(28);
+        iconeLampada.setIconSize(32);
         Label lblTituloMsg = new Label(tituloStatus);
-        lblTituloMsg.setStyle("-fx-font-weight: 900; -fx-font-size: 24px; -fx-text-fill: " + corTema + ";");
+        lblTituloMsg.setStyle("-fx-font-weight: 900; -fx-font-size: 26px; -fx-text-fill: " + corTema + ";");
         cabecalhoMsg.getChildren().addAll(iconeLampada, lblTituloMsg);
 
-        // 3. Corpo da Mensagem
         Label lblCorpoMsg = new Label(msgConselho);
         lblCorpoMsg.setWrapText(true);
         lblCorpoMsg.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
-        lblCorpoMsg.setStyle("-fx-font-size: 22px; -fx-text-fill: #546E7A; -fx-font-weight: normal;");
+        lblCorpoMsg.setStyle("-fx-font-size: 20px; -fx-text-fill: #546E7A; -fx-font-weight: normal;");
         VBox containerTexto = new VBox(lblCorpoMsg);
-        containerTexto.setAlignment(Pos.CENTER); // Centraliza o Label verticalmente e horizontalmente DENTRO deste espaço
-        VBox.setVgrow(containerTexto, Priority.ALWAYS); // Ocupa to-do o espaço que sobra abaixo do cabeçalho
+        containerTexto.setAlignment(Pos.CENTER);
+        VBox.setVgrow(containerTexto, Priority.ALWAYS);
 
         painelMensagem.getChildren().addAll(cabecalhoMsg, containerTexto);
         topoContainer.getChildren().addAll(donutContainer, painelMensagem);
 
-        VBox listaCategorias = new VBox(15);
-        Label tituloLista = new Label("Detalhamento deste Mês");
-        tituloLista.setStyle("-fx-font-size: 16px; -fx-font-weight: 800; -fx-text-fill: #37474F;");
+        VBox listaCategorias = new VBox(12);
+        Label tituloLista = new Label("Top 5 de gastos do Mês");
+        tituloLista.setStyle("-fx-font-size: 18px; -fx-font-weight: 800; -fx-text-fill: #37474F;");
         listaCategorias.getChildren().add(tituloLista);
 
-        final BigDecimal totalParaCalculo = totalDespesasMes;
+        final BigDecimal totalParaCalculo = totalSaidasMes;
         mapa.entrySet().stream()
                 .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
                 .limit(5)
@@ -404,36 +442,35 @@ public class MainController {
         separador.setStyle("-fx-background-color: #F5F5F5; -fx-min-height: 1; -fx-pref-height: 1;");
 
         card.getChildren().addAll(topoContainer, separador, listaCategorias);
-
         return card;
     }
 
     private HBox criarItemListaCategoria(String categoria, double porcentagem) {
-        HBox linha = new HBox(15);
+        HBox linha = new HBox(12); // Spacing menor
         linha.setAlignment(Pos.CENTER_LEFT);
 
         String corHex = IconeUtil.getCorHexPorCategoria(categoria);
-        FontIcon icone = IconeUtil.getIconePorCategoria(categoria);
-        icone.setIconSize(24);
+        FontIcon icone = IconeUtil.getIconePorCategoria(categoria, service);
+        icone.setIconSize(28);
 
-        VBox info = new VBox(5);
+        VBox info = new VBox(4);
         HBox.setHgrow(info, Priority.ALWAYS);
 
         HBox topo = new HBox();
         Label lblNome = new Label(categoria);
-        lblNome.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #455A64;");
+        lblNome.setStyle("-fx-font-weight: bold; -fx-font-size: 15px; -fx-text-fill: #455A64;");
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
         Label lblPct = new Label(String.format("%.0f%%", porcentagem*100));
-        lblPct.setStyle("-fx-font-weight: bold; -fx-text-fill: " + corHex + ";");
+        lblPct.setStyle("-fx-font-weight: bold; -fx-text-fill: " + corHex + "; -fx-font-size: 14px;");
 
         topo.getChildren().addAll(lblNome, spacer, lblPct);
 
         ProgressBar bar = new ProgressBar(porcentagem);
         bar.setMaxWidth(Double.MAX_VALUE);
-        bar.setPrefHeight(12);
+        bar.setPrefHeight(14);
         bar.getStyleClass().add("progress-bar-custom");
         bar.setStyle("-fx-accent: " + corHex + ";");
 
@@ -444,11 +481,11 @@ public class MainController {
 
     private VBox criarListaPendencias() {
         VBox painel = new VBox(15);
-        painel.setStyle("-fx-background-color: white; -fx-background-radius: 20; -fx-padding: 25;");
+        painel.setStyle("-fx-background-color: white; -fx-background-radius: 20; -fx-padding: 20;"); // Padding menor
         painel.setEffect(new DropShadow(20, Color.rgb(0,0,0,0.05)));
 
         Label titulo = new Label("Status de Pagamentos");
-        titulo.setStyle("-fx-font-size: 18px; -fx-font-weight: 800; -fx-text-fill: #37474F;");
+        titulo.setStyle("-fx-font-size: 20px; -fx-font-weight: 800; -fx-text-fill: #37474F;");
         painel.getChildren().add(titulo);
 
         LocalDate hoje = LocalDate.now();
@@ -457,7 +494,7 @@ public class MainController {
                 .filter(c -> !c.pago() && !(c instanceof Receita))
                 .sorted(Comparator.comparing(Conta::dataVencimento))
                 .limit(6)
-                .collect(Collectors.toList());
+                .toList();
 
         YearMonth mesAnteriorLoop = null;
 
@@ -465,28 +502,28 @@ public class MainController {
             YearMonth mesConta = YearMonth.from(c.dataVencimento());
 
             if (!mesConta.equals(mesAnteriorLoop)) {
-                String nomeMes = mesConta.getMonth().getDisplayName(java.time.format.TextStyle.FULL, new Locale("pt", "BR"));
+                String nomeMes = mesConta.getMonth().getDisplayName(java.time.format.TextStyle.FULL, PT_BR);
                 nomeMes = nomeMes.substring(0, 1).toUpperCase() + nomeMes.substring(1);
 
                 Label lblMes = new Label(nomeMes);
-                lblMes.setStyle("-fx-text-fill: #E91E63; -fx-font-weight: bold; -fx-font-size: 12px; -fx-padding: 10 0 5 0;");
+                lblMes.setStyle("-fx-text-fill: #E91E63; -fx-font-weight: bold; -fx-font-size: 13px; -fx-padding: 5 0 2 0;");
                 painel.getChildren().add(lblMes);
 
                 mesAnteriorLoop = mesConta;
             }
 
-            HBox item = new HBox(15);
+            HBox item = new HBox(12);
             item.setAlignment(Pos.CENTER_LEFT);
-            item.setStyle("-fx-background-color: #FAFAFA; -fx-padding: 12; -fx-background-radius: 10;");
+            item.setStyle("-fx-background-color: #FAFAFA; -fx-padding: 10; -fx-background-radius: 10;"); // Padding item menor
 
             StackPane iconBox = new StackPane();
-            iconBox.setPrefSize(40, 40);
+            iconBox.setPrefSize(42, 42); // Menor
             String corBase = c instanceof DespesaCartao ? "#673AB7" : IconeUtil.getCorHexPorCategoria(c.categoria());
             iconBox.setStyle("-fx-background-color: " + corBase + "20; -fx-background-radius: 10;");
 
             FontIcon ic = new FontIcon(c instanceof DespesaCartao ? "far-credit-card" : "fas-file-invoice");
             ic.setIconColor(Color.web(corBase));
-            ic.setIconSize(18);
+            ic.setIconSize(20);
             iconBox.getChildren().add(ic);
 
             boolean atrasado = c.dataVencimento().isBefore(hoje);
@@ -495,18 +532,18 @@ public class MainController {
             String desc = c.descricao();
             if(c instanceof DespesaCartao dc) desc = "Fatura " + dc.nomeCartao();
 
-            VBox dados = new VBox(3);
+            VBox dados = new VBox(2);
             Label lblD = new Label(desc);
-            lblD.setStyle("-fx-font-weight: bold; -fx-text-fill: #455A64;");
+            lblD.setStyle("-fx-font-weight: bold; -fx-text-fill: #455A64; -fx-font-size: 14px;");
 
             Label lblDt = new Label(dataTexto);
-            lblDt.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: " + (atrasado ? "#D32F2F" : "#90A4AE") + ";");
+            lblDt.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: " + (atrasado ? "#D32F2F" : "#90A4AE") + ";");
 
             dados.getChildren().addAll(lblD, lblDt);
             HBox.setHgrow(dados, Priority.ALWAYS);
 
             Label valor = new Label("R$ " + c.valor());
-            valor.setStyle("-fx-font-weight: 900; -fx-text-fill: #37474F;");
+            valor.setStyle("-fx-font-weight: 900; -fx-text-fill: #37474F; -fx-font-size: 13px;");
 
             item.getChildren().addAll(iconBox, dados, valor);
             painel.getChildren().add(item);
@@ -517,12 +554,13 @@ public class MainController {
 
     private VBox criarCabecalhoDashboard() {
         LocalDateTime agora = LocalDateTime.now();
-        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("EEEE, dd 'de' MMMM 'de' yyyy", new Locale("pt", "BR"));
+        // CORREÇÃO: Uso da constante PT_BR
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("EEEE, dd 'de' MMMM 'de' yyyy", PT_BR);
         String texto = agora.format(fmt);
         texto = texto.substring(0, 1).toUpperCase() + texto.substring(1);
 
         Label lblData = new Label(texto);
-        lblData.setStyle("-fx-font-size: 28px; -fx-font-weight: 900; -fx-text-fill: #2D3436;");
+        lblData.setStyle("-fx-font-size: 32px; -fx-font-weight: 900; -fx-text-fill: #2D3436;"); // Leve ajuste
 
         LocalDate hoje = LocalDate.now();
         YearMonth mesAtual = YearMonth.from(hoje);
@@ -532,8 +570,17 @@ public class MainController {
                 : "Faltam " + diasFimMes + " dias para o fim do mês.";
 
         Label lblSub = new Label(frase);
-        lblSub.setStyle("-fx-text-fill: " + (diasFimMes == 0 ? "#D32F2F" : "#1976D2") + "; -fx-font-weight: bold;");
+        lblSub.setStyle("-fx-text-fill: " + (diasFimMes == 0 ? "#D32F2F" : "#1976D2") + "; -fx-font-weight: bold; -fx-font-size: 15px;");
 
         return new VBox(5, lblData, lblSub);
+    }
+
+    // Método auxiliar para mostrar alertas visuais
+    private void mostrarAlerta(String titulo, String mensagem) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(titulo);
+        alert.setHeaderText(null);
+        alert.setContentText(mensagem);
+        alert.showAndWait();
     }
 }

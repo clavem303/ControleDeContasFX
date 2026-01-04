@@ -18,8 +18,14 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class FormularioContaController {
+
+    // Logger para substituir o printStackTrace
+    private static final Logger LOGGER = Logger.getLogger(FormularioContaController.class.getName());
 
     @FXML private Label lblTitulo;
     @FXML private Label lblData;
@@ -60,7 +66,7 @@ public class FormularioContaController {
         dateCompraCartao.setValue(LocalDate.now());
 
         // Padrão: Fixas já nascem marcadas como recorrentes
-        chkRecorrente.setSelected(true);
+        if(chkRecorrente != null) chkRecorrente.setSelected(true);
 
         // --- VALIDAÇÃO DE CAMPOS ---
         ValidadorFX.configurarDecimal(txtValorFixo);
@@ -73,7 +79,7 @@ public class FormularioContaController {
         configurarComboMeses();
 
         // 2. Configura Visual das Categorias (Com Ícones)
-        comboCategoria.setCellFactory(lv -> new ListCell<>() {
+        comboCategoria.setCellFactory(_ -> new ListCell<>() {
             @Override protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
                 if (!empty && item!=null) {
@@ -89,7 +95,7 @@ public class FormularioContaController {
         comboCategoria.setButtonCell(comboCategoria.getCellFactory().call(null));
 
         // 3. Configura Visual de Pagamento
-        comboPagamento.setCellFactory(lv -> new ListCell<>() {
+        comboPagamento.setCellFactory(_ -> new ListCell<>() {
             @Override protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
                 if (!empty && item!=null) {
@@ -128,13 +134,15 @@ public class FormularioContaController {
                 LocalDate dataVencimentoOriginal = dc.dataVencimento();
 
                 DespesaCartao contaAtualizada = new DespesaCartao(
+                        dc.id(), // ID original da conta
                         desc,
                         valorParcela,
                         dataVencimentoOriginal,
                         statusPago,
                         cat,
                         origem,
-                        dc.nomeCartao(),
+                        dc.idCartao(),
+                        dc.nomeCartao(), // Nome exibição
                         dc.numeroParcela(),
                         dc.totalParcelas()
                 );
@@ -153,7 +161,7 @@ public class FormularioContaController {
 
                 BigDecimal total = converterValor(txtTotalCartao.getText());
                 int parcelas = 1;
-                try { parcelas = Integer.parseInt(txtNumParcelas.getText().trim()); } catch(Exception e) {}
+                try { parcelas = Integer.parseInt(txtNumParcelas.getText().trim()); } catch(Exception _) {}
                 if (parcelas < 1) parcelas = 1;
 
                 CartaoConfig cartaoConfig = comboCartaoSelecionado.getValue();
@@ -191,8 +199,9 @@ public class FormularioContaController {
 
             // Se for FIXA, usamos o construtor direto para passar o booleano 'recorrente'
             if ("DESPESA FIXA".equals(tipo)) {
-                boolean isRecorrente = chkRecorrente.isSelected();
-                contaFinal = new ContaFixa(desc, valor, data, statusPago, cat, origem, pagamento, isRecorrente);
+                boolean isRecorrente = chkRecorrente != null && chkRecorrente.isSelected();
+                // Passamos null no ID para nova conta
+                contaFinal = new ContaFixa(null, desc, valor, data, statusPago, cat, origem, pagamento, isRecorrente);
             } else {
                 // Para Variáveis e Receitas, mantemos o uso da Factory
                 String tipoTecnico = "VARIAVEL";
@@ -203,13 +212,17 @@ public class FormularioContaController {
             }
 
             if (contaEdicao == null) service.adicionarConta(contaFinal);
-            else service.atualizarConta(contaEdicao, contaFinal);
+            else {
+                contaFinal = contaFinal.comId(contaEdicao.id());
+                service.atualizarConta(contaEdicao, contaFinal);
+            }
 
             dialogStage.close();
 
         } catch (Exception e) {
+            // CORREÇÃO: "Log" robusto em vez de printStackTrace
+            LOGGER.log(Level.SEVERE, "Erro ao salvar conta", e);
             mostrarAlerta("Erro: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 
@@ -230,9 +243,11 @@ public class FormularioContaController {
         areaCartao.setVisible(isCartao); areaCartao.setManaged(isCartao);
 
         // Só mostra Recorrente se for Despesa Fixa
-        chkRecorrente.setVisible(isFixa);
-        chkRecorrente.setManaged(isFixa);
-        if (!isFixa) chkRecorrente.setSelected(false);
+        if (chkRecorrente != null) {
+            chkRecorrente.setVisible(isFixa);
+            chkRecorrente.setManaged(isFixa);
+            if (!isFixa) chkRecorrente.setSelected(false);
+        }
 
         // 2. Controle de Pagamento
         boolean mostrarPagamento = !isCartao;
@@ -310,13 +325,17 @@ public class FormularioContaController {
     }
 
     public void setContaParaEditar(Conta conta) {
+        // CORREÇÃO: Evita NullPointerException se 'conta' for nula
+        if (conta == null) return;
+
         this.contaEdicao = conta;
 
-        String tipoDetectado;
-        if (conta instanceof Receita) tipoDetectado = "RECEITA";
-        else if (conta instanceof ContaFixa) tipoDetectado = "DESPESA FIXA";
-        else if (conta instanceof DespesaCartao) tipoDetectado = "CARTÃO DE CRÉDITO";
-        else tipoDetectado = "DESPESA VARIÁVEL";
+        String tipoDetectado = switch (conta) {
+            case Receita _ -> "RECEITA";
+            case ContaFixa _ -> "DESPESA FIXA";
+            case DespesaCartao _ -> "CARTÃO DE CRÉDITO";
+            default -> "DESPESA VARIÁVEL";
+        };
 
         configurarFormulario(tipoDetectado);
 
@@ -348,16 +367,19 @@ public class FormularioContaController {
                 comboPagamento.setValue("Aguardando");
             }
 
-            if (conta instanceof ContaFixa cf) {
-                // Aqui carregamos o valor e se é recorrente
-                txtValorFixo.setText(formatarDecimalParaTela(conta.valor()));
-                chkRecorrente.setSelected(cf.isRecorrente());
-
-            } else if (conta instanceof ContaVariavel cv) {
-                txtQuantidade.setText(formatarDecimalParaTela(cv.quantidade()));
-                txtValorUnitario.setText(formatarDecimalParaTela(cv.valorUnitario()));
-            } else if (conta instanceof Receita) {
-                txtValorFixo.setText(formatarDecimalParaTela(conta.valor()));
+            switch (conta) {
+                case ContaFixa cf -> {
+                    // Aqui carregamos o valor e se é recorrente
+                    txtValorFixo.setText(formatarDecimalParaTela(conta.valor()));
+                    if (chkRecorrente != null) chkRecorrente.setSelected(cf.isRecorrente());
+                }
+                case ContaVariavel cv -> {
+                    txtQuantidade.setText(formatarDecimalParaTela(cv.quantidade()));
+                    txtValorUnitario.setText(formatarDecimalParaTela(cv.valorUnitario()));
+                }
+                case Receita _ -> txtValorFixo.setText(formatarDecimalParaTela(conta.valor()));
+                default -> {
+                }
             }
         }
         btnSalvar.setText("Atualizar");
@@ -372,7 +394,8 @@ public class FormularioContaController {
         for (int i = 0; i < 13; i++) comboMesReferencia.getItems().add(atual.plusMonths(i));
         comboMesReferencia.getSelectionModel().selectFirst();
         comboMesReferencia.setConverter(new StringConverter<>() {
-            DateTimeFormatter fmt = DateTimeFormatter.ofPattern("MMMM/yyyy", new java.util.Locale("pt", "BR"));
+            // CORREÇÃO: new Locale() para evitar "cannot resolve symbol of"
+            final DateTimeFormatter fmt = DateTimeFormatter.ofPattern("MMMM/yyyy", Locale.of("pt", "BR"));
             @Override public String toString(YearMonth object) { return object == null ? "" : object.format(fmt).substring(0, 1).toUpperCase() + object.format(fmt).substring(1); }
             @Override public YearMonth fromString(String string) { return null; }
         });

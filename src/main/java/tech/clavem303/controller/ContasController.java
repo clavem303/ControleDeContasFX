@@ -1,42 +1,40 @@
 package tech.clavem303.controller;
 
+import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
+import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import javafx.stage.FileChooser;
-
 import org.kordamp.ikonli.javafx.FontIcon;
-import com.lowagie.text.*;
-import com.lowagie.text.pdf.*;
-
 import tech.clavem303.model.Conta;
 import tech.clavem303.model.ContaVariavel;
 import tech.clavem303.model.DespesaCartao;
 import tech.clavem303.service.GerenciadorDeContas;
 
-import java.awt.Color;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
 import java.util.Comparator;
+import java.util.Locale;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public class ContasController {
+
+    private static final Logger LOGGER = Logger.getLogger(ContasController.class.getName());
+    private static final Locale PT_BR = Locale.of("pt", "BR");
 
     // --- Tabela RECEITAS ---
     @FXML private TableView<Conta> tabelaReceitas;
@@ -126,7 +124,7 @@ public class ContasController {
         configurarTabelaVariavel();
 
         configurarTabelaCartoes();
-        configurarTabelaFaturasPagas(); // NOVO
+        configurarTabelaFaturasPagas();
 
         configurarTabelaFiltro();
         configurarOpcoesFiltro();
@@ -136,7 +134,7 @@ public class ContasController {
         configurarColunaData(colVencimentoVar);
         configurarColunaData(colCartaoVencimento);
         configurarColunaData(colFiltroData);
-        configurarColunaData(colFatVencimento); // NOVO
+        configurarColunaData(colFatVencimento);
 
         // Ícones
         configurarColunaComIcone(colCatReceita, true);
@@ -146,16 +144,12 @@ public class ContasController {
         configurarColunaComIcone(colCatVar, true);
         configurarColunaComIcone(colPagamentoVar, false);
         configurarColunaComIcone(colCartaoCat, true);
-        configurarColunaComIcone(colFatCat, true); // NOVO
+        configurarColunaComIcone(colFatCat, true);
 
-        tabPaneRegistros.getSelectionModel().selectedItemProperty().addListener((obs, oldTab, newTab) -> {
-            // Desabilita "Novo Registro" se estiver em abas de pesquisa/histórico
-            if (newTab != null && (newTab.getText().contains("Pesquisa") || newTab.getText().contains("Faturas Pagas"))) {
-                btnNovaConta.setDisable(true);
-            } else {
-                btnNovaConta.setDisable(false);
-            }
-        });
+        tabPaneRegistros.getSelectionModel().selectedItemProperty().addListener((_, _, newTab) ->
+                btnNovaConta.setDisable(newTab != null &&
+                        (newTab.getText().contains("Pesquisa") || newTab.getText().contains("Faturas Pagas")))
+        );
     }
 
     private void configurarTabelaReceitas() {
@@ -165,9 +159,9 @@ public class ContasController {
         colOrigemReceita.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().origem()));
         colDataReceita.setCellValueFactory(d -> new SimpleObjectProperty<>(d.getValue().dataVencimento()));
 
-        NumberFormat formatoMoeda = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
+        NumberFormat formatoMoeda = NumberFormat.getCurrencyInstance(PT_BR);
         colValorReceita.setCellValueFactory(d -> new SimpleObjectProperty<>(d.getValue().valor()));
-        colValorReceita.setCellFactory(tc -> new TableCell<>() {
+        colValorReceita.setCellFactory(_ -> new TableCell<>() {
             @Override
             protected void updateItem(BigDecimal valor, boolean empty) {
                 super.updateItem(valor, empty);
@@ -193,8 +187,8 @@ public class ContasController {
 
         configurarColunaStatus(colStatusFixa, false);
 
-        NumberFormat formatoMoeda = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
-        colValorFixa.setCellFactory(tc -> new TableCell<>() {
+        NumberFormat formatoMoeda = NumberFormat.getCurrencyInstance(PT_BR);
+        colValorFixa.setCellFactory(_ -> new TableCell<>() {
             @Override
             protected void updateItem(BigDecimal valor, boolean empty) {
                 super.updateItem(valor, empty);
@@ -226,10 +220,10 @@ public class ContasController {
             return null;
         });
 
-        NumberFormat formatoMoeda = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
-        NumberFormat formatoQtd = NumberFormat.getNumberInstance(new Locale("pt", "BR"));
+        NumberFormat formatoMoeda = NumberFormat.getCurrencyInstance(PT_BR);
+        NumberFormat formatoQtd = NumberFormat.getNumberInstance(PT_BR);
 
-        colValorVar.setCellFactory(tc -> new TableCell<>() {
+        colValorVar.setCellFactory(_ -> new TableCell<>() {
             @Override
             protected void updateItem(BigDecimal valor, boolean empty) {
                 super.updateItem(valor, empty);
@@ -238,7 +232,7 @@ public class ContasController {
             }
         });
 
-        colUnitarioVar.setCellFactory(tc -> new TableCell<>() {
+        colUnitarioVar.setCellFactory(_ -> new TableCell<>() {
             @Override
             protected void updateItem(BigDecimal valor, boolean empty) {
                 super.updateItem(valor, empty);
@@ -247,7 +241,7 @@ public class ContasController {
             }
         });
 
-        colQtdVar.setCellFactory(tc -> new TableCell<>() {
+        colQtdVar.setCellFactory(_ -> new TableCell<>() {
             @Override
             protected void updateItem(BigDecimal qtd, boolean empty) {
                 super.updateItem(qtd, empty);
@@ -268,16 +262,16 @@ public class ContasController {
             Conta c = d.getValue();
             if (c instanceof tech.clavem303.model.Receita) return new SimpleStringProperty("Receita");
             if (c instanceof tech.clavem303.model.ContaFixa) return new SimpleStringProperty("Desp. Fixa");
-            if (c instanceof tech.clavem303.model.DespesaCartao) return new SimpleStringProperty("Cartão");
+            if (c instanceof DespesaCartao) return new SimpleStringProperty("Cartão");
             return new SimpleStringProperty("Desp. Variável");
         });
 
         colFiltroValor.setCellValueFactory(d -> {
-            NumberFormat nf = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
+            NumberFormat nf = NumberFormat.getCurrencyInstance(PT_BR);
             return new SimpleStringProperty(nf.format(d.getValue().valor()));
         });
 
-        colFiltroValor.setCellFactory(column -> new TableCell<Conta, String>() {
+        colFiltroValor.setCellFactory(_ -> new TableCell<>() {
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
@@ -286,11 +280,13 @@ public class ContasController {
                     setStyle("");
                 } else {
                     setText(item);
-                    Conta c = getTableView().getItems().get(getIndex());
-                    if (c instanceof tech.clavem303.model.Receita) {
-                        setStyle("-fx-text-fill: #4CAF50; -fx-font-weight: bold;");
-                    } else {
-                        setStyle("-fx-text-fill: #F44336;");
+                    if (getIndex() >= 0 && getIndex() < getTableView().getItems().size()) {
+                        Conta c = getTableView().getItems().get(getIndex());
+                        if (c instanceof tech.clavem303.model.Receita) {
+                            setStyle("-fx-text-fill: #4CAF50; -fx-font-weight: bold;");
+                        } else {
+                            setStyle("-fx-text-fill: #F44336;");
+                        }
                     }
                 }
             }
@@ -322,13 +318,13 @@ public class ContasController {
             carregarDadosEmBackground();
 
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "Erro ao abrir formulário", e);
+            mostrarAlerta("Erro Crítico", "Não foi possível abrir a janela do formulário.\nDetalhe: " + e.getMessage());
         }
     }
 
-    // --- CORREÇÃO DO MÉTODO DE AÇÕES ---
     private void criarBotaoAcoes(TableColumn<Conta, Void> coluna, TableView<Conta> tabela) {
-        coluna.setCellFactory(param -> new TableCell<>() {
+        coluna.setCellFactory(_ -> new TableCell<>() {
             private final Button btnPago = new Button();
             private final Button btnEditar = new Button();
             private final Button btnExcluir = new Button();
@@ -340,39 +336,34 @@ public class ContasController {
                 iconCheck.setIconSize(12);
                 btnPago.setGraphic(iconCheck);
 
-                btnPago.setOnAction(event -> {
+                btnPago.setOnAction(_ -> {
                     Conta conta = getTableView().getItems().get(getIndex());
                     if (conta.pago()) return;
 
-                    // 1. Atualiza no Banco de Dados
                     service.marcarComoPaga(conta);
 
-                    // 2. CORREÇÃO: Atualiza a lista VISUAL imediatamente
-                    // Como records são imutáveis, a lista antiga ainda tem o objeto antigo (pago=false)
-                    // Precisamos trocar pelo novo objeto (pago=true)
                     Conta contaAtualizada = conta.comStatusPago(true);
                     getTableView().getItems().set(getIndex(), contaAtualizada);
 
-                    // 3. Atualiza estilos
                     atualizarEstiloBtnPago(btnPago, true);
                     tabela.refresh();
                 });
 
                 // BOTÃO EDITAR
                 btnEditar.setStyle("-fx-background-color: #90CAF9; -fx-text-fill: #0D47A1; -fx-background-radius: 5; -fx-cursor: hand;");
-                btnEditar.setOnMouseEntered(e -> btnEditar.setStyle("-fx-background-color: #64B5F6; -fx-text-fill: #0D47A1; -fx-background-radius: 5; -fx-cursor: hand;"));
-                btnEditar.setOnMouseExited(e -> btnEditar.setStyle("-fx-background-color: #90CAF9; -fx-text-fill: #0D47A1; -fx-background-radius: 5; -fx-cursor: hand;"));
+                btnEditar.setOnMouseEntered(_ -> btnEditar.setStyle("-fx-background-color: #64B5F6; -fx-text-fill: #0D47A1; -fx-background-radius: 5; -fx-cursor: hand;"));
+                btnEditar.setOnMouseExited(_ -> btnEditar.setStyle("-fx-background-color: #90CAF9; -fx-text-fill: #0D47A1; -fx-background-radius: 5; -fx-cursor: hand;"));
                 FontIcon iconEdit = new FontIcon("fas-pen"); iconEdit.setIconSize(12); btnEditar.setGraphic(iconEdit);
                 btnEditar.setTooltip(new Tooltip("Editar"));
-                btnEditar.setOnAction(e -> abrirFormulario(getTableView().getItems().get(getIndex())));
+                btnEditar.setOnAction(_ -> abrirFormulario(getTableView().getItems().get(getIndex())));
 
                 // BOTÃO EXCLUIR
                 btnExcluir.setStyle("-fx-background-color: #EF9A9A; -fx-text-fill: #B71C1C; -fx-background-radius: 5; -fx-cursor: hand;");
-                btnExcluir.setOnMouseEntered(e -> btnExcluir.setStyle("-fx-background-color: #E57373; -fx-text-fill: #B71C1C; -fx-background-radius: 5; -fx-cursor: hand;"));
-                btnExcluir.setOnMouseExited(e -> btnExcluir.setStyle("-fx-background-color: #EF9A9A; -fx-text-fill: #B71C1C; -fx-background-radius: 5; -fx-cursor: hand;"));
+                btnExcluir.setOnMouseEntered(_ -> btnExcluir.setStyle("-fx-background-color: #E57373; -fx-text-fill: #B71C1C; -fx-background-radius: 5; -fx-cursor: hand;"));
+                btnExcluir.setOnMouseExited(_ -> btnExcluir.setStyle("-fx-background-color: #EF9A9A; -fx-text-fill: #B71C1C; -fx-background-radius: 5; -fx-cursor: hand;"));
                 FontIcon iconTrash = new FontIcon("fas-trash"); iconTrash.setIconSize(12); btnExcluir.setGraphic(iconTrash);
                 btnExcluir.setTooltip(new Tooltip("Excluir"));
-                btnExcluir.setOnAction(event -> {
+                btnExcluir.setOnAction(_ -> {
                     Conta conta = getTableView().getItems().get(getIndex());
                     Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Deseja apagar: " + conta.descricao() + "?", ButtonType.YES, ButtonType.NO);
                     if (alert.showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
@@ -392,16 +383,14 @@ public class ContasController {
                 } else {
                     Conta conta = getTableView().getItems().get(getIndex());
 
-                    // --- CORREÇÃO: Esconder botão Pagar se for Cartão ---
                     if (conta instanceof DespesaCartao) {
                         btnPago.setVisible(false);
-                        btnPago.setManaged(false); // Remove espaço ocupado
+                        btnPago.setManaged(false);
                     } else {
                         btnPago.setVisible(true);
                         btnPago.setManaged(true);
                         atualizarEstiloBtnPago(btnPago, conta.pago());
                     }
-                    // ---------------------------------------------------
 
                     setGraphic(container);
                 }
@@ -416,13 +405,13 @@ public class ContasController {
             btn.setCursor(javafx.scene.Cursor.DEFAULT);
             btn.setOnMouseEntered(null);
             btn.setOnMouseExited(null);
-            btn.setDisable(false); // Mantém habilitado para receber cliques se necessário (mas visualmente desativado)
+            btn.setDisable(false);
         } else {
             btn.setStyle("-fx-background-color: #EEEEEE; -fx-text-fill: #9E9E9E; -fx-background-radius: 5; -fx-cursor: hand;");
             btn.setTooltip(new Tooltip("Pagar"));
             btn.setCursor(javafx.scene.Cursor.HAND);
-            btn.setOnMouseEntered(e -> btn.setStyle("-fx-background-color: #A5D6A7; -fx-text-fill: #1B5E20; -fx-background-radius: 5; -fx-cursor: hand;"));
-            btn.setOnMouseExited(e -> btn.setStyle("-fx-background-color: #EEEEEE; -fx-text-fill: #9E9E9E; -fx-background-radius: 5; -fx-cursor: hand;"));
+            btn.setOnMouseEntered(_ -> btn.setStyle("-fx-background-color: #A5D6A7; -fx-text-fill: #1B5E20; -fx-background-radius: 5; -fx-cursor: hand;"));
+            btn.setOnMouseExited(_ -> btn.setStyle("-fx-background-color: #EEEEEE; -fx-text-fill: #9E9E9E; -fx-background-radius: 5; -fx-cursor: hand;"));
             btn.setDisable(false);
         }
     }
@@ -437,7 +426,7 @@ public class ContasController {
             }
         });
 
-        coluna.setCellFactory(tc -> new TableCell<>() {
+        coluna.setCellFactory(_ -> new TableCell<>() {
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
@@ -466,13 +455,11 @@ public class ContasController {
         filtroCategoria.getItems().clear();
         filtroCategoria.getItems().add("Todas");
 
-        // AGORA BUSCA DO SERVICE (Banco de Dados) - Centralizado!
         if (service != null) {
             filtroCategoria.getItems().addAll(service.getCategoriasReceita());
             filtroCategoria.getItems().addAll(service.getCategoriasDespesa());
         }
 
-        // Remove duplicatas e ordena (caso tenha nomes iguais em receitas/despesas)
         java.util.List<String> unicas = filtroCategoria.getItems().stream().distinct().toList();
         filtroCategoria.getItems().setAll(unicas);
 
@@ -496,7 +483,7 @@ public class ContasController {
 
         BigDecimal saldoFiltrado = totalReceitas.subtract(totalDespesas);
 
-        NumberFormat nf = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
+        NumberFormat nf = NumberFormat.getCurrencyInstance(PT_BR);
         lblTotalFiltro.setText(nf.format(saldoFiltrado));
 
         if (saldoFiltrado.compareTo(BigDecimal.ZERO) >= 0) {
@@ -505,14 +492,6 @@ public class ContasController {
             lblTotalFiltro.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #F44336;");
         }
     }
-
-    private void criarDocumentoPDF(File file) throws IOException, DocumentException {
-        // ... (Manter código original de PDF) ...
-        // Para economizar espaço aqui, estou omitindo, mas mantenha o método igual.
-        // Se precisar, posso reenviar o bloco do PDF.
-    }
-
-    // MÉTODOS AUXILIARES DE PDF (adicionarCelulaCabecalho, criarCelula, etc) - Manter iguais
 
     private void mostrarAlerta(String titulo, String msg) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
@@ -536,8 +515,7 @@ public class ContasController {
                 var listaCompleta = service.getContas();
                 LocalDate dataCorte = LocalDate.now().minusMonths(3);
 
-                javafx.application.Platform.runLater(() -> {
-                    // 1. Receitas
+                Platform.runLater(() -> {
                     var receitasFiltradas = listaCompleta.stream()
                             .filter(c -> c instanceof tech.clavem303.model.Receita)
                             .filter(c -> !c.dataVencimento().isBefore(dataCorte))
@@ -545,7 +523,6 @@ public class ContasController {
                             .collect(Collectors.toList());
                     tabelaReceitas.setItems(FXCollections.observableArrayList(receitasFiltradas));
 
-                    // 2. Fixas
                     var fixasFiltradas = listaCompleta.stream()
                             .filter(c -> c instanceof tech.clavem303.model.ContaFixa)
                             .filter(c -> !c.dataVencimento().isBefore(dataCorte))
@@ -553,7 +530,6 @@ public class ContasController {
                             .collect(Collectors.toList());
                     tabelaFixas.setItems(FXCollections.observableArrayList(fixasFiltradas));
 
-                    // 3. Variáveis
                     var variaveisFiltradas = listaCompleta.stream()
                             .filter(c -> c instanceof tech.clavem303.model.ContaVariavel)
                             .filter(c -> !c.dataVencimento().isBefore(dataCorte))
@@ -561,25 +537,25 @@ public class ContasController {
                             .collect(Collectors.toList());
                     tabelaVariaveis.setItems(FXCollections.observableArrayList(variaveisFiltradas));
 
-                    // 4. Cartões (PENDENTES)
                     var cartoesFiltrados = listaCompleta.stream()
                             .filter(c -> c instanceof DespesaCartao)
-                            .filter(c -> !c.pago()) // Apenas pendentes na aba principal
+                            .filter(c -> !c.pago())
                             .filter(c -> !c.dataVencimento().isBefore(dataCorte))
                             .sorted(Comparator.comparing(Conta::dataVencimento).reversed())
                             .collect(Collectors.toList());
                     tabelaCartoes.setItems(FXCollections.observableArrayList(cartoesFiltrados));
 
-                    // 5. Faturas Pagas (HISTÓRICO)
                     var faturasPagas = listaCompleta.stream()
                             .filter(c -> c instanceof DespesaCartao)
-                            .filter(c -> c.pago()) // Apenas pagos
-                            // Pode-se aumentar o corte de data para histórico se quiser, ex: 6 meses
+                            .filter(Conta::pago)
                             .sorted(Comparator.comparing(Conta::dataVencimento).reversed())
                             .collect(Collectors.toList());
                     tabelaFaturasPagas.setItems(FXCollections.observableArrayList(faturasPagas));
                 });
-            } catch (Exception e) { e.printStackTrace(); }
+            } catch (Exception e) {
+                LOGGER.log(Level.SEVERE, "Erro ao carregar dados em background", e);
+                Platform.runLater(() -> mostrarAlerta("Erro", "Falha ao carregar os dados."));
+            }
         }).start();
     }
 
@@ -599,8 +575,8 @@ public class ContasController {
             return null;
         });
 
-        NumberFormat formatoMoeda = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
-        colCartaoValor.setCellFactory(tc -> new TableCell<>() {
+        NumberFormat formatoMoeda = NumberFormat.getCurrencyInstance(PT_BR);
+        colCartaoValor.setCellFactory(_ -> new TableCell<>() {
             @Override protected void updateItem(BigDecimal valor, boolean empty) {
                 super.updateItem(valor, empty);
                 if (empty || valor == null) setText(null);
@@ -612,7 +588,6 @@ public class ContasController {
         criarBotaoAcoes(colCartaoAcoes, tabelaCartoes);
     }
 
-    // NOVA CONFIGURAÇÃO PARA FATURAS PAGAS (Sem botão de ações)
     private void configurarTabelaFaturasPagas() {
         colFatDesc.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().descricao()));
         colFatCat.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().categoria()));
@@ -629,8 +604,8 @@ public class ContasController {
             return null;
         });
 
-        NumberFormat formatoMoeda = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
-        colFatValor.setCellFactory(tc -> new TableCell<>() {
+        NumberFormat formatoMoeda = NumberFormat.getCurrencyInstance(PT_BR);
+        colFatValor.setCellFactory(_ -> new TableCell<>() {
             @Override protected void updateItem(BigDecimal valor, boolean empty) {
                 super.updateItem(valor, empty);
                 if (empty || valor == null) setText(null);
@@ -643,7 +618,7 @@ public class ContasController {
 
     private void configurarColunaData(TableColumn<Conta, LocalDate> coluna) {
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-        coluna.setCellFactory(col -> new TableCell<>() {
+        coluna.setCellFactory(_ -> new TableCell<>() {
             @Override
             protected void updateItem(LocalDate item, boolean empty) {
                 super.updateItem(item, empty);
@@ -663,13 +638,7 @@ public class ContasController {
             FormularioContaController controller = loader.getController();
             controller.setService(this.service);
 
-            String abaSelecionada = tabPaneRegistros.getSelectionModel().getSelectedItem().getText();
-            String tipoParaAbrir = "DESPESA VARIÁVEL";
-
-            if (abaSelecionada.contains("Receitas")) tipoParaAbrir = "RECEITA";
-            else if (abaSelecionada.contains("Fixas")) tipoParaAbrir = "DESPESA FIXA";
-            else if (abaSelecionada.contains("Cartões")) tipoParaAbrir = "CARTÃO DE CRÉDITO";
-            else if (abaSelecionada.contains("Variáveis")) tipoParaAbrir = "DESPESA VARIÁVEL";
+            String tipoParaAbrir = obterTipoContaPelaAba();
 
             controller.configurarFormulario(tipoParaAbrir);
 
@@ -683,14 +652,29 @@ public class ContasController {
             carregarDadosEmBackground();
 
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "Erro ao abrir formulário de nova conta", e);
             mostrarAlerta("Erro", "Não foi possível abrir o formulário.");
         }
     }
 
+    // MÉTODO EXTRAÍDO (Refatoração Limpa)
+    private String obterTipoContaPelaAba() {
+        String tipoParaAbrir = "DESPESA VARIÁVEL"; // Padrão
+
+        // Verifica se há seleção antes de pegar o texto
+        if (tabPaneRegistros.getSelectionModel().getSelectedItem() != null) {
+            String abaSelecionada = tabPaneRegistros.getSelectionModel().getSelectedItem().getText();
+
+            if (abaSelecionada.contains("Receitas")) tipoParaAbrir = "RECEITA";
+            else if (abaSelecionada.contains("Fixas")) tipoParaAbrir = "DESPESA FIXA";
+            else if (abaSelecionada.contains("Cartões")) tipoParaAbrir = "CARTÃO DE CRÉDITO";
+            else if (abaSelecionada.contains("Variáveis")) tipoParaAbrir = "DESPESA VARIÁVEL";
+        }
+        return tipoParaAbrir;
+    }
+
     @FXML
     private void acaoFiltrar() {
-        // ... (Mesma lógica de antes) ...
         String texto = filtroDescricao.getText().toLowerCase();
         String catSelecionada = filtroCategoria.getValue();
         String statusSelecionado = filtroStatus.getValue();
@@ -728,8 +712,6 @@ public class ContasController {
 
     @FXML
     private void acaoExportarPDF() {
-        // ... (Mesma lógica de antes) ...
-        // Se precisar do código, avise.
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Salvar Relatório");
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF Files", "*.pdf"));
@@ -739,9 +721,6 @@ public class ContasController {
             lblTotalFiltro.setText("Gerando PDF...");
             new Thread(() -> {
                 try {
-                    // criarDocumentoPDF(file); // Método comentado pois é longo, mas deve existir no arquivo
-                    // Mantenha seu método existente criarDocumentoPDF aqui!
-
                     // Simulação para o exemplo:
                     tech.clavem303.service.RelatorioService rs = new tech.clavem303.service.RelatorioService();
                     rs.gerarRelatorioPDF(file, tabelaFiltro.getItems());
@@ -752,7 +731,7 @@ public class ContasController {
                         mostrarAlerta("Sucesso", "Relatório gerado e aberto com sucesso!");
                     });
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    LOGGER.log(Level.SEVERE, "Erro ao exportar PDF", e);
                     javafx.application.Platform.runLater(() -> {
                         lblTotalFiltro.setText("Erro ao gerar");
                         mostrarAlerta("Erro", "Falha ao gerar PDF: " + e.getMessage());
@@ -764,7 +743,6 @@ public class ContasController {
 
     @FXML
     private void acaoPagarFatura() {
-        // ... (Mesma lógica de antes) ...
         var faturasAbertas = service.getContas().stream()
                 .filter(c -> c instanceof DespesaCartao && !c.pago())
                 .map(c -> (DespesaCartao) c)
@@ -778,7 +756,7 @@ public class ContasController {
             return;
         }
 
-        ChoiceDialog<String> dialog = new ChoiceDialog<>(faturasAbertas.get(0), faturasAbertas);
+        ChoiceDialog<String> dialog = new ChoiceDialog<>(faturasAbertas.getFirst(), faturasAbertas);
         dialog.setTitle("Pagar Fatura");
         dialog.setHeaderText("Selecione a fatura que deseja baixar:");
         dialog.setContentText("Fatura:");
@@ -797,18 +775,19 @@ public class ContasController {
                         .map(Conta::valor)
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-                NumberFormat nf = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
+                NumberFormat nf = NumberFormat.getCurrencyInstance(PT_BR);
                 Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
                         "Confirma o pagamento da fatura " + nomeCartao + "?\nTotal: " + nf.format(totalFatura), ButtonType.YES, ButtonType.NO);
 
                 confirm.showAndWait().ifPresent(resp -> {
                     if (resp == ButtonType.YES) {
                         service.pagarFaturaCartao(nomeCartao, dataVencimento);
-                        carregarDadosEmBackground(); // Recarrega tudo (move de Cartões para Faturas Pagas)
+                        carregarDadosEmBackground();
                         mostrarAlerta("Sucesso", "Fatura baixada com sucesso!");
                     }
                 });
             } catch (Exception e) {
+                LOGGER.log(Level.SEVERE, "Erro ao processar fatura", e);
                 mostrarAlerta("Erro", "Erro ao processar fatura: " + e.getMessage());
             }
         });
@@ -816,17 +795,16 @@ public class ContasController {
 
     // --- MÉTODOS AUXILIARES DE ÍCONE ---
     private FontIcon getIconePorCategoria(String categoria) {
-        // ... Mantenha sua lógica existente ...
-        return tech.clavem303.util.IconeUtil.getIconePorCategoria(categoria);
+        // CORREÇÃO: Passamos o 'service' para buscar o ícone do banco
+        return tech.clavem303.util.IconeUtil.getIconePorCategoria(categoria, service);
     }
 
     private FontIcon getIconePorPagamento(String pagamento) {
-        // ... Mantenha sua lógica existente ...
         return tech.clavem303.util.IconeUtil.getIconePorPagamento(pagamento);
     }
 
     private void configurarColunaComIcone(TableColumn<Conta, String> coluna, boolean isCategoria) {
-        coluna.setCellFactory(col -> new TableCell<>() {
+        coluna.setCellFactory(_ -> new TableCell<>() {
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);

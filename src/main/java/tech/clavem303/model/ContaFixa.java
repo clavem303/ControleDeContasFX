@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public record ContaFixa(
+        Integer id, // <--- Novo campo
         String descricao,
         BigDecimal valor,
         LocalDate dataVencimento,
@@ -11,26 +12,23 @@ public record ContaFixa(
         String categoria,
         String origem,
         String formaPagamento,
-        boolean recorrente // <--- Novo Campo
+        boolean recorrente
 ) implements Conta {
 
-    // --- CONSTRUTOR DE COMPATIBILIDADE ---
-    // Este construtor permite que partes antigas do seu código (como o DAO ou Factory)
-    // continuem funcionando sem quebrar, assumindo que a conta É recorrente por padrão.
-    public ContaFixa(String descricao, BigDecimal valor, LocalDate dataVencimento, boolean pago, String categoria, String origem, String formaPagamento) {
-        this(descricao, valor, dataVencimento, pago, categoria, origem, formaPagamento, true);
+    // Construtor para novas contas (ID null)
+    public ContaFixa(String descricao, BigDecimal valor, LocalDate dataVencimento, boolean pago, String categoria, String origem, String formaPagamento, boolean recorrente) {
+        this(null, descricao, valor, dataVencimento, pago, categoria, origem, formaPagamento, recorrente);
     }
 
-    // --- MÉTODOS AUXILIARES ---
-
-    // Método que o seu Controller está procurando
-    public boolean isRecorrente() {
-        return recorrente;
-    }
+    public boolean isRecorrente() { return recorrente; }
 
     @Override
     public ContaFixa comStatusPago(boolean novoStatus) {
-        // Retorna uma cópia atualizada mantendo o status de recorrência
-        return new ContaFixa(descricao, valor, dataVencimento, novoStatus, categoria, origem, formaPagamento, recorrente);
+        return new ContaFixa(id, descricao, valor, dataVencimento, novoStatus, categoria, origem, formaPagamento, recorrente);
+    }
+
+    @Override
+    public ContaFixa comId(Integer novoId) {
+        return new ContaFixa(novoId, descricao, valor, dataVencimento, pago, categoria, origem, formaPagamento, recorrente);
     }
 }

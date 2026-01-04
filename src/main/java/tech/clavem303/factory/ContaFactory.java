@@ -21,20 +21,34 @@ public class ContaFactory {
             String origem,
             String formaPagamento
     ) {
-
         String tipoUpper = tipo.toUpperCase();
 
+        // OBS: Passamos 'null' como primeiro argumento (ID) pois é uma nova conta
         return switch (tipoUpper) {
-            // CORREÇÃO: Adicionado 'false' (pago) na 4ª posição para casar com o construtor
-            case "FIXA" -> new ContaFixa(descricao, valor, dataVencimento, false, categoria, origem, formaPagamento);
+            case "FIXA", "DESPESA FIXA" -> new ContaFixa(null, descricao, valor, dataVencimento, false, categoria, origem, formaPagamento, true);
 
-            case "RECEITA" -> new Receita(descricao, valor, dataVencimento, false, categoria, origem, formaPagamento);
+            case "RECEITA" -> new Receita(null, descricao, valor, dataVencimento, false, categoria, origem, formaPagamento);
 
-            case "VARIAVEL" -> {
+            case "VARIAVEL", "DESPESA VARIÁVEL" -> {
                 if (quantidade == null || valorUnitario == null) {
                     throw new IllegalArgumentException("Conta Variável requer Quantidade e Valor Unitário.");
                 }
-                yield new ContaVariavel(descricao, dataVencimento, quantidade, valorUnitario, categoria, origem, formaPagamento);
+
+                // CORREÇÃO: Calculamos o total aqui e chamamos o construtor completo
+                BigDecimal totalCalculado = quantidade.multiply(valorUnitario);
+
+                yield new ContaVariavel(
+                        null, // ID (novo)
+                        descricao,
+                        totalCalculado, // Valor Total
+                        dataVencimento,
+                        false, // Pago?
+                        quantidade,
+                        valorUnitario,
+                        categoria,
+                        origem,
+                        formaPagamento
+                );
             }
             default -> throw new IllegalArgumentException("Tipo inválido: " + tipo);
         };

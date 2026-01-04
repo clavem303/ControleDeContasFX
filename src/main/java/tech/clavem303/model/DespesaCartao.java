@@ -4,31 +4,39 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public record DespesaCartao(
+        Integer id, // <--- Novo campo
         String descricao,
-        BigDecimal valor,              // Valor da parcela
-        LocalDate dataVencimentoFatura, // Data que a fatura vence
+        BigDecimal valor,
+        LocalDate dataVencimentoFatura,
         boolean pago,
         String categoria,
-        String origem,                 // Estabelecimento
-        String nomeCartao,             // Ex: Nubank
-        int numeroParcela,             // <--- MUDAMOS DE parcelaAtual PARA numeroParcela
+        String origem,
+        Integer idCartao,   // ID do cartão (FK)
+        String nomeCartaoExibicao, // Nome (Visual)
+        int numeroParcela,
         int totalParcelas
 ) implements Conta {
 
-    // Método obrigatório da interface
-    @Override public String formaPagamento() { return "Crédito"; }
+    // Construtor facilitador
+    public DespesaCartao(String descricao, BigDecimal valor, LocalDate dataVencimento, boolean pago, String categoria, String origem, Integer idCartao, String nomeCartao, int nParcela, int tParcelas) {
+        this(null, descricao, valor, dataVencimento, pago, categoria, origem, idCartao, nomeCartao, nParcela, tParcelas);
+    }
 
-    // Alias para dataVencimento (necessário pois o record usa dataVencimentoFatura)
+    @Override public String formaPagamento() { return "Crédito"; }
     @Override public LocalDate dataVencimento() { return dataVencimentoFatura; }
 
-    // Retorna uma cópia com status pago alterado
     @Override
     public Conta comStatusPago(boolean novoStatus) {
-        return new DespesaCartao(descricao, valor, dataVencimentoFatura, novoStatus, categoria, origem, nomeCartao, numeroParcela, totalParcelas);
+        return new DespesaCartao(id, descricao, valor, dataVencimentoFatura, novoStatus, categoria, origem, idCartao, nomeCartaoExibicao, numeroParcela, totalParcelas);
     }
 
-    // Método auxiliar para exibição "1/10"
-    public String getInfoParcela() {
-        return numeroParcela + "/" + totalParcelas;
+    @Override
+    public Conta comId(Integer novoId) {
+        return new DespesaCartao(novoId, descricao, valor, dataVencimentoFatura, pago, categoria, origem, idCartao, nomeCartaoExibicao, numeroParcela, totalParcelas);
     }
+
+    public String getInfoParcela() { return numeroParcela + "/" + totalParcelas; }
+
+    // Método de compatibilidade para o Controller
+    public String nomeCartao() { return nomeCartaoExibicao; }
 }

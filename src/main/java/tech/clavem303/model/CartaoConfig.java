@@ -1,8 +1,14 @@
 package tech.clavem303.model;
 
-public record CartaoConfig(String nome, int diaVencimento) {
+public record CartaoConfig(Integer id, String nome, int diaVencimento) {
+
+    // Construtor para criar NOVO cartão (sem ID ainda)
+    public CartaoConfig(String nome, int diaVencimento) {
+        this(null, nome, diaVencimento);
+    }
+
     @Override
     public String toString() {
-        return nome + " (Vence dia " + diaVencimento + ")";
+        return nome + " (Dia " + diaVencimento + ")";
     }
 }

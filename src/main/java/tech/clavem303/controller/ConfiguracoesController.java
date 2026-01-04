@@ -13,7 +13,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.time.LocalDate;
-import java.util.Base64;
 
 public class ConfiguracoesController {
 
@@ -58,7 +57,7 @@ public class ConfiguracoesController {
         ValidadorFX.limitarTamanho(txtNomeCartao, 20);
 
         // 3. Configura a Lista de Cartões (Visual)
-        listaCartoes.setCellFactory(param -> new ListCell<>() {
+        listaCartoes.setCellFactory(_ -> new ListCell<>() {
             @Override
             protected void updateItem(CartaoConfig item, boolean empty) {
                 super.updateItem(item, empty);
@@ -76,7 +75,7 @@ public class ConfiguracoesController {
         });
 
         // 4. Configura a Lista de Despesas (Visual com Ícone)
-        listaCatDespesas.setCellFactory(param -> new ListCell<>() {
+        listaCatDespesas.setCellFactory(_ -> new ListCell<>() {
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
@@ -92,7 +91,7 @@ public class ConfiguracoesController {
         });
 
         // 5. Configura a Lista de Receitas (Visual com Ícone)
-        listaCatReceitas.setCellFactory(param -> new ListCell<>() {
+        listaCatReceitas.setCellFactory(_ -> new ListCell<>() {
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
@@ -125,7 +124,7 @@ public class ConfiguracoesController {
         combo.getItems().addAll(IconeUtil.ICONES_DISPONIVEIS.values());
 
         // Factory para mostrar o desenho do ícone na lista
-        combo.setCellFactory(lv -> new ListCell<>() {
+        combo.setCellFactory(_ -> new ListCell<>() {
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);

@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public interface Conta {
+    Integer id(); // <--- OBRIGATÓRIO: Identificador único
     String descricao();
     BigDecimal valor();
     LocalDate dataVencimento();
@@ -12,6 +13,6 @@ public interface Conta {
     String origem();
     String formaPagamento();
 
-
     Conta comStatusPago(boolean novoStatus);
+    Conta comId(Integer id); // Necessário para atualizações
 }

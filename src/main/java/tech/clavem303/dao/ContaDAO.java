@@ -1,7 +1,6 @@
 package tech.clavem303.dao;
 
 import tech.clavem303.model.*;
-
 import java.sql.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -9,91 +8,106 @@ import java.util.List;
 
 public class ContaDAO {
 
-    private Connection connection;
-
-    public ContaDAO() {
-        this.connection = ConexaoFactory.getConnection(); // Agora funciona!
-        // A inicialização de tabelas está sendo feita no Main ou no Service,
-        // mas se quiser garantir, pode chamar aqui:
-        // ConexaoFactory.inicializarBanco();
+    public Conta salvar(Conta conta) {
+        if (conta.id() == null) {
+            return inserir(conta); // Retorna a conta com o ID gerado
+        } else {
+            atualizar(conta);
+            return conta; // Retorna a conta atualizada
+        }
     }
 
-    public void salvar(Conta conta) {
+    private Conta inserir(Conta conta) {
         String sql = """
-                INSERT INTO contas (
-                    tipo, descricao, valor, data_vencimento, pago, categoria, origem, forma_pagamento,
-                    quantidade, valor_unitario, cartao_nome, numero_parcela, total_parcelas, recorrente
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """;
+            INSERT INTO contas (
+                tipo, descricao, valor, data_vencimento, pago, categoria, origem, forma_pagamento,
+                quantidade, valor_unitario, cartao_id, numero_parcela, total_parcelas, recorrente
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """;
 
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        // CORREÇÃO CRUCIAL: Pedimos ao banco para retornar a chave (ID) gerada
+        try (Connection conn = ConexaoFactory.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
             preencherStatement(stmt, conta);
             stmt.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException("Erro ao salvar conta", e);
-        }
+
+            // Captura o ID gerado
+            try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                    Integer novoId = generatedKeys.getInt(1);
+                    // Retorna uma CÓPIA do objeto original, agora com ID
+                    return conta.comId(novoId);
+                } else {
+                    throw new SQLException("Falha ao criar conta, nenhum ID obtido.");
+                }
+            }
+        } catch (SQLException e) { throw new RuntimeException("Erro ao salvar conta", e); }
     }
 
-    public void atualizarStatusPago(Conta conta, boolean pago) {
-        String sql = "UPDATE contas SET pago = ? WHERE descricao = ? AND data_vencimento = ? AND valor = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setBoolean(1, pago);
-            stmt.setString(2, conta.descricao());
-            stmt.setDate(3, Date.valueOf(conta.dataVencimento()));
-            stmt.setBigDecimal(4, conta.valor());
+    private void atualizar(Conta conta) {
+        String sql = """
+            UPDATE contas SET
+                tipo=?, descricao=?, valor=?, data_vencimento=?, pago=?, categoria=?, origem=?, forma_pagamento=?,
+                quantidade=?, valor_unitario=?, cartao_id=?, numero_parcela=?, total_parcelas=?, recorrente=?
+            WHERE id = ?
+        """;
+        try (Connection conn = ConexaoFactory.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+            preencherStatement(stmt, conta);
+            stmt.setInt(15, conta.id()); // Usa o ID para achar o registro
             stmt.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException("Erro ao atualizar status", e);
-        }
+        } catch (SQLException e) { throw new RuntimeException("Erro ao atualizar conta", e); }
     }
 
     public void deletar(Conta conta) {
-        String sql = "DELETE FROM contas WHERE descricao = ? AND data_vencimento = ? AND categoria = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setString(1, conta.descricao());
-            stmt.setDate(2, Date.valueOf(conta.dataVencimento()));
-            stmt.setString(3, conta.categoria());
+        String sql = "DELETE FROM contas WHERE id = ?";
+        try (Connection conn = ConexaoFactory.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+            if (conta.id() == null) throw new IllegalArgumentException("Impossível deletar conta sem ID.");
+            stmt.setInt(1, conta.id());
             stmt.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException("Erro ao deletar conta", e);
+        } catch (SQLException e) { throw new RuntimeException("Erro ao deletar conta", e); }
+    }
+
+    public void atualizarStatusPago(Conta conta, boolean pago) {
+        if (conta.id() != null) {
+            String sql = "UPDATE contas SET pago = ? WHERE id = ?";
+            try (Connection conn = ConexaoFactory.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setBoolean(1, pago);
+                stmt.setInt(2, conta.id());
+                stmt.executeUpdate();
+            } catch (SQLException e) { throw new RuntimeException(e); }
         }
     }
 
     public List<Conta> listarTodos() {
+        String sql = """
+            SELECT c.*, ca.nome as nome_cartao_join 
+            FROM contas c
+            LEFT JOIN cartoes ca ON c.cartao_id = ca.id
+            ORDER BY c.data_vencimento
+        """;
         List<Conta> lista = new ArrayList<>();
-        String sql = "SELECT * FROM contas ORDER BY data_vencimento";
-
-        try (PreparedStatement stmt = connection.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-
-            while (rs.next()) {
-                lista.add(mapear(rs));
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        try (Connection conn = ConexaoFactory.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) lista.add(mapear(rs));
+        } catch (SQLException e) { e.printStackTrace(); }
         return lista;
     }
 
     public List<ContaFixa> listarFixasPorMes(LocalDate dataReferencia) {
         List<ContaFixa> lista = new ArrayList<>();
         String sql = "SELECT * FROM contas WHERE tipo = 'FIXA' AND strftime('%Y-%m', data_vencimento) = ?";
-
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (Connection conn = ConexaoFactory.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
             String anoMes = dataReferencia.toString().substring(0, 7);
             stmt.setString(1, anoMes);
-
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     Conta c = mapear(rs);
-                    if (c instanceof ContaFixa cf) {
-                        lista.add(cf);
-                    }
+                    if (c instanceof ContaFixa cf) lista.add(cf);
                 }
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        } catch (SQLException e) { e.printStackTrace(); }
         return lista;
     }
 
@@ -111,29 +125,23 @@ public class ContaDAO {
         stmt.setString(6, c.categoria());
         stmt.setString(7, c.origem());
         stmt.setString(8, c.formaPagamento());
-
-        stmt.setObject(9, null);
-        stmt.setObject(10, null);
-        stmt.setObject(11, null);
-        stmt.setObject(12, null);
-        stmt.setObject(13, null);
-        stmt.setBoolean(14, false);
+        stmt.setObject(9, null); stmt.setObject(10, null); stmt.setObject(11, null);
+        stmt.setObject(12, null); stmt.setObject(13, null); stmt.setBoolean(14, false);
 
         if (c instanceof ContaVariavel cv) {
             stmt.setBigDecimal(9, cv.quantidade());
             stmt.setBigDecimal(10, cv.valorUnitario());
-        }
-        else if (c instanceof DespesaCartao dc) {
-            stmt.setString(11, dc.nomeCartao());
+        } else if (c instanceof DespesaCartao dc) {
+            stmt.setObject(11, dc.idCartao());
             stmt.setInt(12, dc.numeroParcela());
             stmt.setInt(13, dc.totalParcelas());
-        }
-        else if (c instanceof ContaFixa cf) {
+        } else if (c instanceof ContaFixa cf) {
             stmt.setBoolean(14, cf.isRecorrente());
         }
     }
 
     private Conta mapear(ResultSet rs) throws SQLException {
+        Integer id = rs.getInt("id"); // <--- IMPORTANTE: Lê o ID
         String tipo = rs.getString("tipo");
         String desc = rs.getString("descricao");
         java.math.BigDecimal valor = rs.getBigDecimal("valor");
@@ -144,27 +152,20 @@ public class ContaDAO {
         String pgto = rs.getString("forma_pagamento");
         boolean recorrente = rs.getBoolean("recorrente");
 
-        switch (tipo) {
-            case "RECEITA" -> {
-                return new Receita(desc, valor, data, pago, cat, origem, pgto);
-            }
-            case "FIXA" -> {
-                return new ContaFixa(desc, valor, data, pago, cat, origem, pgto, recorrente);
-            }
+        return switch (tipo) {
+            case "RECEITA" -> new Receita(id, desc, valor, data, pago, cat, origem, pgto);
+            case "FIXA" -> new ContaFixa(id, desc, valor, data, pago, cat, origem, pgto, recorrente);
             case "CARTAO" -> {
-                String nomeCartao = rs.getString("cartao_nome");
-                int nParcela = rs.getInt("numero_parcela");
-                int tParcelas = rs.getInt("total_parcelas");
-                return new DespesaCartao(desc, valor, data, pago, cat, origem, nomeCartao, nParcela, tParcelas);
+                int idCartao = rs.getInt("cartao_id");
+                String nomeCartao = rs.getString("nome_cartao_join");
+                if (nomeCartao == null) nomeCartao = "Cartão";
+                yield new DespesaCartao(id, desc, valor, data, pago, cat, origem, idCartao, nomeCartao, rs.getInt("numero_parcela"), rs.getInt("total_parcelas"));
             }
             default -> {
-                // VARIAVEL - CORREÇÃO AQUI
                 java.math.BigDecimal qtd = rs.getBigDecimal("quantidade");
                 java.math.BigDecimal unit = rs.getBigDecimal("valor_unitario");
-
-                // Usando o construtor CANÔNICO do Record (todos os campos na ordem certa)
-                return new ContaVariavel(desc, valor, data, pago, qtd, unit, cat, origem, pgto);
+                yield new ContaVariavel(id, desc, valor, data, pago, qtd, unit, cat, origem, pgto);
             }
-        }
+        };
     }
 }

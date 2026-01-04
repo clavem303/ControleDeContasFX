@@ -9,52 +9,44 @@
 .sidebar {
     -fx-background-color: -fx-sidebar-bg;
     -fx-padding: 20;
-    -fx-pref-width: 220;
-
-    /* ADICIONADO: Sombra na direita para "descolar" do conteúdo */
+    -fx-pref-width: 240; /* AUMENTADO levemente para caber o texto maior */
     -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 10, 0, 0, 0);
 }
 
 .app-title {
     -fx-text-fill: -fx-text-white;
-    -fx-font-size: 20px;
+    -fx-font-size: 24px; /* AUMENTADO (era 20) */
     -fx-font-weight: bold;
     -fx-padding: 0 0 0 10;
 }
 
 .sidebar-icon-logo {
     -fx-icon-color: -fx-primary-color;
+    /* Tamanho controlado pelo FXML, mas pode sobrescrever aqui se precisar */
 }
 
-/* Botões do Menu (Maior e Mais Espaçado) */
-/* 2. Botão com preparação para o efeito */
+/* Botões do Menu */
 .nav-button {
     -fx-background-color: transparent;
     -fx-text-fill: #A0A0A0;
-    -fx-font-size: 18px;
+    -fx-font-size: 20px; /* AUMENTADO (era 18) */
     -fx-alignment: CENTER_LEFT;
     -fx-cursor: hand;
-    -fx-pref-width: 200;
-
-    /* ADICIONADO: Borda transparente na esquerda (para o texto não pular no hover) */
+    -fx-pref-width: 220; /* AUMENTADO */
     -fx-border-color: transparent;
-    -fx-border-width: 0 0 0 5; /* 5px de largura na esquerda */
-    -fx-padding: 12 10; /* Ajustei o padding esquerdo para compensar a borda */
+    -fx-border-width: 0 0 0 5;
+    -fx-padding: 14 12; /* Padding ajustado */
 }
 
-/* Ajuste o ícone para acompanhar o texto */
 .nav-button .ikonli-font-icon {
     -fx-icon-color: #A0A0A0;
-    -fx-icon-size: 20; /* AUMENTADO */
+    -fx-icon-size: 24; /* AUMENTADO (era 20) */
 }
 
-/* 3. O Efeito de Hover "Neon Strip" */
 .nav-button:hover {
     -fx-background-color: #2D2D3A;
     -fx-text-fill: -fx-text-white;
-    -fx-background-radius: 0 8 8 0; /* Arredonda só a direita */
-
-    /* ADICIONADO: A mágica! A borda fica da cor primária */
+    -fx-background-radius: 0 8 8 0;
     -fx-border-color: -fx-primary-color;
 }
 
@@ -67,11 +59,12 @@
     -fx-padding: 20;
 }
 
-/* Estilo para Tabela e Botões de Ação */
+/* Tabela e Botões */
 .table-view {
     -fx-background-color: transparent;
     -fx-border-color: #E0E0E0;
     -fx-border-radius: 8;
+    -fx-font-size: 14px; /* AUMENTADO (padrão é ~12/13) */
 }
 
 .table-view .column-header-background {
@@ -83,6 +76,7 @@
 .table-view .column-header .label {
     -fx-text-fill: #666;
     -fx-font-weight: bold;
+    -fx-font-size: 14px; /* AUMENTADO */
 }
 
 .action-button {
@@ -98,185 +92,166 @@
     -fx-background-color: #3a2dbf;
 }
 
-/* Estilo específico para o botão de Sair (Opcional) */
-/* Você precisa adicionar id="btnSair" no FXML do botão para isso funcionar */
 #btnSair:hover {
-    -fx-border-color: #F44336; /* Vermelho */
+    -fx-border-color: #F44336;
     -fx-text-fill: #F44336;
 }
 #btnSair:hover .ikonli-font-icon {
     -fx-icon-color: #F44336;
 }
 
-/* Cores do Gráfico (Chart) */
+/* Gráfico */
 .chart-pie-label {
-    -fx-fill: #444444; /* MUDANÇA: Cinza escuro para aparecer no fundo claro */
-    -fx-font-size: 13px; /* Um pouco maior para leitura fácil */
+    -fx-fill: #444444;
+    -fx-font-size: 14px; /* AUMENTADO */
     -fx-font-weight: bold;
 }
 
-/* Opcional: A linha que liga a fatia ao texto */
 .chart-pie-label-line {
     -fx-stroke: #888888;
 }
 
-/* Cor da primeira fatia (Receita) */
 .default-color0.chart-pie { -fx-pie-color: #3f51b5; }
-
-/* Cor da segunda fatia (Despesa) */
 .default-color1.chart-pie { -fx-pie-color: #ff9800; }
 
-/* --- BADGES (Etiquetas de Status) --- */
+/* Badges */
 .badge-container {
     -fx-alignment: CENTER;
 }
 
 .badge {
-    -fx-padding: 5 12;
-    -fx-background-radius: 12;
-    -fx-font-size: 11px;
+    -fx-padding: 6 14; /* Padding aumentado */
+    -fx-background-radius: 14;
+    -fx-font-size: 12px; /* AUMENTADO (era 11) */
     -fx-font-weight: bold;
 }
 
-/* PAGO: Verde (Sucesso) */
 .status-pago {
-    -fx-background-color: #d4edda; /* Fundo Verde Claro */
-    -fx-text-fill: #155724;        /* Texto Verde Escuro */
-    -fx-border-color: #c3e6cb;     /* Borda sutil */
+    -fx-background-color: #d4edda;
+    -fx-text-fill: #155724;
+    -fx-border-color: #c3e6cb;
     -fx-border-radius: 12;
 }
 
-/* RECEBIDO: Azul (Informação) */
 .status-recebido {
-    -fx-background-color: #cce5ff; /* Fundo Azul Claro (bem diferente do verde) */
-    -fx-text-fill: #004085;        /* Texto Azul Escuro */
+    -fx-background-color: #cce5ff;
+    -fx-text-fill: #004085;
     -fx-border-color: #b8daff;
     -fx-border-radius: 12;
 }
 
-/* PENDENTE: Vermelho/Rosa (Alerta) */
 .status-pendente {
-    -fx-background-color: #f8d7da; /* Fundo Rosado */
-    -fx-text-fill: #721c24;        /* Texto Vermelho Escuro */
+    -fx-background-color: #f8d7da;
+    -fx-text-fill: #721c24;
     -fx-border-color: #f5c6cb;
     -fx-border-radius: 12;
 }
 
-/* --- DASHBOARD ULTRA MODERNO --- */
-
-/* Remove qualquer borda ou efeito 3D das fatias */
+/* Dashboard Moderno */
 .chart-pie {
     -fx-border-color: transparent;
     -fx-background-insets: 0;
     -fx-border-width: 0;
 }
 
-/* Esconde labels padrão */
 .chart-pie-label, .chart-pie-label-line, .chart-legend {
     -fx-visibility: hidden;
 }
 
-/* Barra de Progresso "Cápsula" */
 .progress-bar-custom .track {
-    -fx-background-color: #ECEFF1; /* Cinza gelo fundo */
-    -fx-background-radius: 20;     /* Totalmente redondo */
+    -fx-background-color: #ECEFF1;
+    -fx-background-radius: 20;
 }
 
 .progress-bar-custom .bar {
     -fx-background-radius: 20;
     -fx-background-insets: 0;
-    -fx-effect: null; /* Remove sombras padrão para ficar Flat */
+    -fx-effect: null;
 }
 
-/* --- TELA DE REGISTROS MODERNA --- */
-
-/* 1. ESTILO DAS ABAS (TabPane) */
+/* Telas Modernas */
 .modern-tab-pane .tab-header-area .tab-header-background {
-    -fx-background-color: transparent; /* Remove o fundo cinza feio atrás das abas */
+    -fx-background-color: transparent;
 }
 
 .modern-tab-pane .tab {
     -fx-background-color: transparent;
     -fx-background-insets: 0;
-    -fx-padding: 10 20;
+    -fx-padding: 12 22; /* Padding aumentado */
     -fx-border-color: transparent;
     -fx-cursor: hand;
 }
 
 .modern-tab-pane .tab:selected {
     -fx-background-color: transparent;
-    -fx-border-color: -fx-primary-color; /* Azul do sistema */
-    -fx-border-width: 0 0 3 0; /* Apenas uma linha grossa embaixo */
+    -fx-border-color: -fx-primary-color;
+    -fx-border-width: 0 0 3 0;
 }
 
 .modern-tab-pane .tab-label {
-    -fx-text-fill: #90A4AE; /* Cinza claro quando não selecionado */
+    -fx-text-fill: #90A4AE;
     -fx-font-weight: bold;
-    -fx-font-size: 14px;
+    -fx-font-size: 16px; /* AUMENTADO (era 14) */
 }
 
 .modern-tab-pane .tab:selected .tab-label {
-    -fx-text-fill: -fx-primary-color; /* Azul quando selecionado */
+    -fx-text-fill: -fx-primary-color;
 }
 
-/* 2. ESTILO DA TABELA (TableView) */
 .modern-table {
     -fx-background-color: white;
     -fx-background-radius: 10;
-    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 10, 0, 0, 5); /* Sombra suave */
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 10, 0, 0, 5);
     -fx-padding: 10;
     -fx-border-color: transparent;
 }
 
-/* Cabeçalho da Tabela */
 .modern-table .column-header-background {
     -fx-background-color: white;
-    -fx-border-width: 0 0 1 0; /* Linha fina separando cabeçalho */
+    -fx-border-width: 0 0 1 0;
     -fx-border-color: #F0F0F0;
 }
 
 .modern-table .column-header {
     -fx-background-color: transparent;
-    -fx-size: 45px; /* Altura do cabeçalho */
+    -fx-size: 50px; /* AUMENTADO (era 45) */
     -fx-border-color: transparent;
 }
 
 .modern-table .column-header .label {
-    -fx-text-fill: #546E7A; /* Cinza azulado */
+    -fx-text-fill: #546E7A;
     -fx-font-weight: bold;
-    -fx-font-size: 13px;
+    -fx-font-size: 15px; /* AUMENTADO (era 13) */
     -fx-alignment: CENTER;
 }
 
-/* Linhas da Tabela */
 .modern-table .table-row-cell {
     -fx-background-color: white;
     -fx-border-color: transparent;
-    -fx-cell-size: 45px; /* Linhas mais altas (mais respiro) */
+    -fx-cell-size: 50px; /* AUMENTADO (era 45) */
 }
 
 .modern-table .table-row-cell:odd {
-    -fx-background-color: #FAFAFA; /* Zebra striping bem sutil */
+    -fx-background-color: #FAFAFA;
 }
 
 .modern-table .table-row-cell:hover {
-    -fx-background-color: #F5F5F5; /* Highlight ao passar o mouse */
+    -fx-background-color: #F5F5F5;
 }
 
 .modern-table .table-row-cell:selected {
-    -fx-background-color: #E3F2FD; /* Azul bem clarinho na seleção */
+    -fx-background-color: #E3F2FD;
     -fx-background-insets: 0;
 }
 
-/* Texto dentro das células */
 .modern-table .table-cell {
-    -fx-border-color: transparent; /* Remove linhas verticais */
+    -fx-border-color: transparent;
     -fx-text-fill: #37474F;
     -fx-alignment: CENTER;
     -fx-padding: 0 10 0 10;
+    -fx-font-size: 14px; /* AUMENTADO para conteúdo da tabela */
 }
 
-/* Remove a barra de rolagem feia se não for necessária */
 .modern-table .scroll-bar:horizontal .track,
 .modern-table .scroll-bar:vertical .track{
     -fx-background-color: transparent;

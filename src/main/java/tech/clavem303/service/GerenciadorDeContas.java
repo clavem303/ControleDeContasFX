@@ -10,26 +10,33 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class GerenciadorDeContas {
 
-    // Listas Observáveis para a UI
+    // 1. Logger profissional
+    private static final Logger LOGGER = Logger.getLogger(GerenciadorDeContas.class.getName());
+
     private final ObservableList<Conta> contas;
     private final ObservableList<CartaoConfig> cartoesConfig;
     private final ObservableList<String> categoriasReceita;
     private final ObservableList<String> categoriasDespesa;
-
-    // Cache de ícones (para não ir no banco toda hora que desenhar uma célula)
     private final Map<String, String> mapaIcones = new HashMap<>();
 
-    // DAOs
     private final ContaDAO contaDAO;
     private final CartaoDAO cartaoDAO;
     private final CategoriaDAO categoriaDAO;
     private final SistemaDAO sistemaDAO;
 
     public GerenciadorDeContas() {
-        ConexaoFactory.inicializarBanco();
+        // Inicialização com tratamento de erro
+        try {
+            ConexaoFactory.inicializarBanco();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Falha crítica ao inicializar banco de dados", e);
+            throw new RuntimeException("Não foi possível iniciar o sistema de banco de dados.", e);
+        }
 
         this.contaDAO = new ContaDAO();
         this.cartaoDAO = new CartaoDAO();
@@ -41,35 +48,73 @@ public class GerenciadorDeContas {
         this.categoriasReceita = FXCollections.observableArrayList();
         this.categoriasDespesa = FXCollections.observableArrayList();
 
-        // Verifica se precisa criar categorias padrão (primeira execução)
         inicializarCategoriasPadraoSeNecessario();
-
         recarregarDados();
     }
 
+    public void adicionarConta(Conta c) {
+        if (c != null) {
+            try {
+                Conta contaComId = contaDAO.salvar(c);
+                contas.add(contaComId);
+            } catch (Exception e) {
+                LOGGER.log(Level.SEVERE, "Erro ao adicionar conta: " + c.descricao(), e);
+                throw e; // Re-lança para a UI mostrar o alerta
+            }
+        }
+    }
+
+    public void atualizarConta(Conta antiga, Conta nova) {
+        try {
+            contaDAO.salvar(nova);
+            int index = contas.indexOf(antiga);
+            if (index >= 0) {
+                contas.set(index, nova);
+            }
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Erro ao atualizar conta ID: " + antiga.id(), e);
+            throw e;
+        }
+    }
+
+    public void removerConta(Conta c) {
+        try {
+            contaDAO.deletar(c);
+            contas.remove(c);
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Erro ao remover conta ID: " + c.id(), e);
+            throw e;
+        }
+    }
+
+    public void marcarComoPaga(Conta c) {
+        try {
+            contaDAO.atualizarStatusPago(c, true);
+            int index = contas.indexOf(c);
+            if (index >= 0) {
+                contas.set(index, c.comStatusPago(true));
+            }
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Erro ao marcar conta como paga ID: " + c.id(), e);
+            throw e;
+        }
+    }
+
+    // --- MÉTODOS AUXILIARES ---
+
     private void inicializarCategoriasPadraoSeNecessario() {
         if (categoriaDAO.estaVazia()) {
-
-            // O Collator garante que a ordem alfabética respeite os acentos (pt-BR)
-            // Ex: "Água" vem logo no início, junto com "A", e não no final da lista.
             java.text.Collator collator = java.text.Collator.getInstance(new java.util.Locale("pt", "BR"));
 
-            // --- 1. PREPARAÇÃO DAS RECEITAS (Ordenadas) ---
             java.util.Map<String, String> receitas = new java.util.TreeMap<>(collator);
             receitas.put("Salário", "fas-money-bill-wave");
             receitas.put("Renda Extra", "fas-plus-circle");
             receitas.put("Investimentos", "fas-chart-line");
             receitas.put("Benefícios", "fas-hand-holding-usd");
             receitas.put("Outros", "fas-tag");
-
-            // Insere no banco
             receitas.forEach((nome, icone) -> criarCatPadrao(nome, icone, "RECEITA"));
 
-
-            // --- 2. PREPARAÇÃO DAS DESPESAS (Ordenadas) ---
             java.util.Map<String, String> despesas = new java.util.TreeMap<>(collator);
-
-            // Adiciona Fixas
             despesas.put("Água", "fas-faucet");
             despesas.put("Luz", "fas-lightbulb");
             despesas.put("Celular", "fas-mobile-alt");
@@ -78,8 +123,6 @@ public class GerenciadorDeContas {
             despesas.put("Seguro", "fas-shield-alt");
             despesas.put("Faculdade", "fas-graduation-cap");
             despesas.put("Cartão de Crédito", "fas-credit-card");
-
-            // Adiciona Variáveis
             despesas.put("Fast Food", "fas-hamburger");
             despesas.put("Restaurante", "fas-utensils");
             despesas.put("Mercado", "fas-shopping-cart");
@@ -97,42 +140,37 @@ public class GerenciadorDeContas {
             despesas.put("Dívida", "fas-exchange-alt");
             despesas.put("Manutenção", "fas-tools");
             despesas.put("Diversos", "fas-box-open");
-
-            // Insere no banco (agora o loop vai rodar em ordem alfabética)
             despesas.forEach((nome, icone) -> criarCatPadrao(nome, icone, "DESPESA"));
         }
     }
 
     private void criarCatPadrao(String nome, String icone, String tipo) {
-        categoriaDAO.adicionar(nome, tipo);
-        categoriaDAO.definirIcone(nome, icone);
+        try {
+            categoriaDAO.adicionar(nome, tipo);
+            categoriaDAO.definirIcone(nome, icone);
+        } catch (Exception e) {
+            LOGGER.warning("Erro ao criar categoria padrão: " + nome);
+        }
     }
 
     public void recarregarDados() {
-        contas.clear();
-        contas.addAll(contaDAO.listarTodos());
-
-        cartoesConfig.clear();
-        cartoesConfig.addAll(cartaoDAO.listar());
-
-        // Recarrega Categorias
-        categoriasReceita.setAll(categoriaDAO.listar("RECEITA"));
-        categoriasDespesa.setAll(categoriaDAO.listar("DESPESA"));
-
-        // Recarrega Ícones
-        mapaIcones.clear();
-        mapaIcones.putAll(categoriaDAO.carregarIcones());
+        try {
+            contas.clear();
+            contas.addAll(contaDAO.listarTodos());
+            cartoesConfig.clear();
+            cartoesConfig.addAll(cartaoDAO.listar());
+            categoriasReceita.setAll(categoriaDAO.listar("RECEITA"));
+            categoriasDespesa.setAll(categoriaDAO.listar("DESPESA"));
+            mapaIcones.clear();
+            mapaIcones.putAll(categoriaDAO.carregarIcones());
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Erro crítico ao recarregar dados do banco", e);
+        }
     }
 
-    // --- MÉTODOS DE CATEGORIA ---
+    public ObservableList<String> getCategoriasReceita() { return categoriasReceita; }
 
-    public ObservableList<String> getCategoriasReceita() {
-        return categoriasReceita;
-    }
-
-    public ObservableList<String> getCategoriasDespesa() {
-        return categoriasDespesa;
-    }
+    public ObservableList<String> getCategoriasDespesa() { return categoriasDespesa; }
 
     public void adicionarCategoriaReceita(String nova) {
         if (!categoriasReceita.contains(nova)) {
@@ -163,120 +201,130 @@ public class GerenciadorDeContas {
         mapaIcones.put(categoria, iconeLiteral);
     }
 
-    public String getIconeSalvo(String categoria) {
-        return mapaIcones.get(categoria);
-    }
+    public String getIconeSalvo(String categoria) { return mapaIcones.get(categoria); }
+    public ObservableList<CartaoConfig> getCartoesConfig() { return cartoesConfig; }
 
-    // --- MÉTODOS DE CARTÃO ---
-    public ObservableList<CartaoConfig> getCartoesConfig() {
-        return cartoesConfig;
-    }
-
+    // --- CORREÇÃO CRÍTICA DO DELETE AQUI ---
     public void adicionarCartaoConfig(String nome, int dia) {
-        CartaoConfig novo = new CartaoConfig(nome, dia);
-        cartaoDAO.salvar(novo);
-        cartoesConfig.add(novo);
+        try {
+            // 1. Cria objeto com ID nulo
+            CartaoConfig novo = new CartaoConfig(null, nome, dia);
+
+            // 2. Salva e RECEBE o objeto atualizado (com ID gerado pelo banco)
+            CartaoConfig salvo = cartaoDAO.salvar(novo);
+
+            // 3. Adiciona na lista da tela o objeto QUE TEM ID
+            cartoesConfig.add(salvo);
+
+            LOGGER.info("Cartão adicionado com sucesso: " + nome + " (ID: " + salvo.id() + ")");
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Erro ao adicionar cartão: " + nome, e);
+            throw e;
+        }
     }
 
     public void removerCartaoConfig(CartaoConfig cartao) {
-        cartaoDAO.deletar(cartao.nome());
-        cartoesConfig.remove(cartao);
-    }
-
-    // --- MÉTODOS DE CONTA ---
-    public ObservableList<Conta> getContas() {
-        return contas;
-    }
-
-    public void adicionarConta(Conta c) {
-        if (c != null) {
-            contaDAO.salvar(c);
-            contas.add(c);
+        try {
+            cartaoDAO.deletar(cartao);
+            cartoesConfig.remove(cartao);
+            LOGGER.info("Cartão removido: " + cartao.nome());
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Erro ao remover cartão: " + cartao.nome(), e);
+            throw e;
         }
     }
 
-    public void removerConta(Conta c) {
-        contaDAO.deletar(c);
-        contas.remove(c);
-    }
+    public ObservableList<Conta> getContas() { return contas; }
 
-    public void marcarComoPaga(Conta c) {
-        contaDAO.atualizarStatusPago(c, true);
-        int index = contas.indexOf(c);
-        if (index >= 0) {
-            contas.set(index, c.comStatusPago(true));
-        }
-    }
+    public void adicionarCompraCartao(String descricao, BigDecimal total, int numParcelas,
+                                      String categoria, String origem, String nomeCartao,
+                                      LocalDate dataPrimeiraParcela) {
+        try {
+            Integer idCartao = null;
+            for (CartaoConfig c : cartaoDAO.listar()) {
+                if (c.nome().equals(nomeCartao)) {
+                    idCartao = c.id();
+                    break;
+                }
+            }
+            if (idCartao == null) throw new RuntimeException("Cartão não encontrado no banco: " + nomeCartao);
 
-    public void atualizarConta(Conta antiga, Conta nova) {
-        contaDAO.deletar(antiga);
-        contaDAO.salvar(nova);
-        int index = contas.indexOf(antiga);
-        if (index >= 0) contas.set(index, nova);
-    }
+            BigDecimal valorParcela = total.divide(BigDecimal.valueOf(numParcelas), 2, java.math.RoundingMode.HALF_UP);
 
-    public void adicionarCompraCartao(String desc, BigDecimal total, int parcelas, String cat, String local, String cartao, LocalDate dataPrimeiraFatura) {
-        BigDecimal valorParcela = total.divide(BigDecimal.valueOf(parcelas), 2, java.math.RoundingMode.HALF_UP);
-        for (int i = 0; i < parcelas; i++) {
-            LocalDate vencimento = dataPrimeiraFatura.plusMonths(i);
-            DespesaCartao nova = new DespesaCartao(desc, valorParcela, vencimento, false, cat, local, cartao, i + 1, parcelas);
-            adicionarConta(nova);
+            for (int i = 1; i <= numParcelas; i++) {
+                DespesaCartao parcela = new DespesaCartao(
+                        null,
+                        descricao,
+                        valorParcela,
+                        dataPrimeiraParcela.plusMonths(i - 1),
+                        false,
+                        categoria,
+                        origem,
+                        idCartao,
+                        nomeCartao,
+                        i,
+                        numParcelas
+                );
+
+                Conta contaSalva = contaDAO.salvar(parcela);
+                contas.add(contaSalva);
+            }
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Erro ao lançar compra no cartão", e);
+            throw e;
         }
     }
 
     public void pagarFaturaCartao(String nomeCartao, LocalDate dataVencimentoFatura) {
-        List<Conta> paraPagar = contas.stream()
-                .filter(c -> c instanceof DespesaCartao dc
-                        && dc.nomeCartao().equalsIgnoreCase(nomeCartao)
-                        && dc.dataVencimentoFatura().equals(dataVencimentoFatura)
-                        && !dc.pago())
-                .toList();
+        try {
+            List<Conta> paraPagar = contas.stream()
+                    .filter(c -> c instanceof DespesaCartao dc
+                            && dc.nomeCartao().equalsIgnoreCase(nomeCartao)
+                            && dc.dataVencimentoFatura().equals(dataVencimentoFatura)
+                            && !dc.pago())
+                    .toList();
 
-        for (Conta c : paraPagar) {
-            marcarComoPaga(c);
+            for (Conta c : paraPagar) {
+                marcarComoPaga(c);
+            }
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Erro ao pagar fatura: " + nomeCartao, e);
+            throw e;
         }
     }
 
     public void verificarRecorrenciaMensal() {
-        LocalDate hoje = LocalDate.now();
-        String mesAtualStr = java.time.YearMonth.from(hoje).toString(); // Ex: "2026-01"
+        try {
+            LocalDate hoje = LocalDate.now();
+            String mesAtualStr = java.time.YearMonth.from(hoje).toString();
+            String ultimoMes = sistemaDAO.getValor("ultimo_mes_recorrencia");
 
-        String ultimoMes = sistemaDAO.getValor("ultimo_mes_recorrencia");
+            if (mesAtualStr.equals(ultimoMes)) return;
 
-        // Se já rodamos neste mês, não faz nada
-        if (mesAtualStr.equals(ultimoMes)) return;
+            LOGGER.info("Gerando recorrência para: " + mesAtualStr);
+            LocalDate mesPassado = hoje.minusMonths(1);
+            List<ContaFixa> fixasAnteriores = contaDAO.listarFixasPorMes(mesPassado);
 
-        System.out.println("Gerando recorrência para: " + mesAtualStr);
-
-        // Busca as contas fixas do mês PASSADO para replicar
-        LocalDate mesPassado = hoje.minusMonths(1);
-        List<ContaFixa> fixasAnteriores = contaDAO.listarFixasPorMes(mesPassado);
-
-        for (ContaFixa c : fixasAnteriores) {
-
-            // --- ATUALIZAÇÃO PRINCIPAL AQUI ---
-            // Verifica se a conta está marcada como Recorrente antes de clonar
-            if (c.isRecorrente()) {
-
-                // Cria uma nova conta igual, mas com data +1 mês e status não pago
-                LocalDate novaData = c.dataVencimento().plusMonths(1);
-
-                ContaFixa nova = new ContaFixa(
-                        c.descricao(),
-                        c.valor(),
-                        novaData,
-                        false, // Reseta para Pendente
-                        c.categoria(),
-                        c.origem(),
-                        c.formaPagamento(),
-                        true // A nova conta continua sendo recorrente
-                );
-
-                adicionarConta(nova); // Salva no banco e atualiza a UI
+            for (ContaFixa c : fixasAnteriores) {
+                if (c.isRecorrente()) {
+                    LocalDate novaData = c.dataVencimento().plusMonths(1);
+                    ContaFixa nova = new ContaFixa(
+                            null,
+                            c.descricao(),
+                            c.valor(),
+                            novaData,
+                            false,
+                            c.categoria(),
+                            c.origem(),
+                            c.formaPagamento(),
+                            true
+                    );
+                    adicionarConta(nova);
+                }
             }
+            sistemaDAO.setValor("ultimo_mes_recorrencia", mesAtualStr);
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Erro na verificação de recorrência mensal", e);
         }
-
-        // Atualiza a flag no banco para não rodar de novo neste mês
-        sistemaDAO.setValor("ultimo_mes_recorrencia", mesAtualStr);
     }
 }
