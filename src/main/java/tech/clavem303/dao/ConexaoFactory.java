@@ -1,5 +1,6 @@
 package tech.clavem303.dao;
 
+import java.io.File; // Importante
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -10,13 +11,43 @@ import java.util.logging.Logger;
 public class ConexaoFactory {
 
     private static final Logger LOGGER = Logger.getLogger(ConexaoFactory.class.getName());
-    private static final String URL = "jdbc:sqlite:financeiro.db";
+
+    // Constantes para padronizar o local
+    public static final String NOME_PASTA_APP = ".clavem303financas";
+    public static final String NOME_BANCO = "financeiro.db";
+
+    /**
+     * Retorna o objeto File apontando para o local correto do banco.
+     * Útil para o BackupService ou Controller saberem onde o arquivo está.
+     */
+    public static File getArquivoBancoDeDados() {
+        String userHome = System.getProperty("user.home");
+        File pastaApp = new File(userHome, NOME_PASTA_APP);
+
+        // Verifica se a pasta NÃO existe
+        if (!pastaApp.exists()) {
+            // Tenta criar e guarda o resultado (true/false)
+            boolean criou = pastaApp.mkdirs();
+
+            // Se falhou ao criar E a pasta continua não existindo (erro real)
+            if (!criou && !pastaApp.exists()) {
+                LOGGER.log(Level.SEVERE, "Sem permissão para criar pasta de dados em: " + pastaApp.getAbsolutePath());
+                throw new RuntimeException("Erro Crítico: Não foi possível criar o diretório do sistema. Verifique as permissões de usuário.");
+            }
+        }
+
+        return new File(pastaApp, NOME_BANCO);
+    }
 
     public static Connection getConnection() {
         try {
-            return DriverManager.getConnection(URL);
+            // Pega o caminho absoluto do arquivo na pasta do usuário
+            File arquivoBanco = getArquivoBancoDeDados();
+            String url = "jdbc:sqlite:" + arquivoBanco.getAbsolutePath();
+
+            return DriverManager.getConnection(url);
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Erro fatal ao conectar no arquivo do banco de dados: " + URL, e);
+            LOGGER.log(Level.SEVERE, "Erro fatal ao conectar no banco de dados.", e);
             throw new RuntimeException("Erro ao conectar no banco", e);
         }
     }
@@ -24,10 +55,10 @@ public class ConexaoFactory {
     public static void inicializarBanco() {
         try (Connection conn = getConnection(); Statement stmt = conn.createStatement()) {
 
-            // Habilita Foreign Keys no SQLite (Importante para o delete cascade funcionar se configurado)
+            // Habilita Foreign Keys no SQLite
             stmt.execute("PRAGMA foreign_keys = ON;");
 
-            // 1. Tabela de Cartões (Agora 'cartoes' com "ID")
+            // 1. Tabela de Cartões
             String sqlCartao = """
                 CREATE TABLE IF NOT EXISTS cartoes (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -37,7 +68,7 @@ public class ConexaoFactory {
             """;
             stmt.execute(sqlCartao);
 
-            // 2. Tabela de Categorias (Agora 'categorias' com ID)
+            // 2. Tabela de Categorias
             String sqlCategoria = """
                 CREATE TABLE IF NOT EXISTS categorias (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -49,7 +80,7 @@ public class ConexaoFactory {
             """;
             stmt.execute(sqlCategoria);
 
-            // 3. Tabela de Contas (Com cartao_id FK)
+            // 3. Tabela de Contas
             String sqlConta = """
                 CREATE TABLE IF NOT EXISTS contas (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -82,7 +113,6 @@ public class ConexaoFactory {
             stmt.execute(sqlConfig);
 
         } catch (SQLException e) {
-            // CORREÇÃO: Registrar erro severo e PARAR a aplicação
             LOGGER.log(Level.SEVERE, "Falha crítica na inicialização das tabelas do banco", e);
             throw new RuntimeException("Não foi possível inicializar a estrutura do banco de dados.", e);
         }
