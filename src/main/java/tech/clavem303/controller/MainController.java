@@ -25,11 +25,13 @@ import tech.clavem303.util.IconeUtil;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.text.NumberFormat;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
+import java.time.format.TextStyle;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -170,7 +172,8 @@ public class MainController {
         HBox.setHgrow(painelGrafico, Priority.ALWAYS);
 
         VBox listaLateral = criarListaPendencias();
-        listaLateral.setMinWidth(380);
+        listaLateral.setMinWidth(480);
+        listaLateral.setPrefWidth(480);
 
         bottomBox.getChildren().addAll(painelGrafico, listaLateral);
         container.getChildren().add(bottomBox);
@@ -201,7 +204,7 @@ public class MainController {
         lblTitulo.setStyle("-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 22px;");
 
         // CORREÇÃO: Uso da constante PT_BR
-        Label lblValor = new Label(NumberFormat.getCurrencyInstance(PT_BR).format(valor));
+        Label lblValor = new Label(formatarMoeda(valor));
         lblValor.setStyle("-fx-text-fill: white; -fx-font-size: 42px; -fx-font-weight: 900;");
 
         card.getChildren().addAll(icon, lblTitulo, lblValor);
@@ -493,21 +496,21 @@ public class MainController {
         List<Conta> pendentes = service.getContas().stream()
                 .filter(c -> !c.pago() && !(c instanceof Receita))
                 .sorted(Comparator.comparing(Conta::dataVencimento))
-                .limit(6)
+                .limit(30)
                 .toList();
 
         YearMonth mesAnteriorLoop = null;
-
+        VBox containerItens = new VBox(15);
         for (Conta c : pendentes) {
             YearMonth mesConta = YearMonth.from(c.dataVencimento());
 
             if (!mesConta.equals(mesAnteriorLoop)) {
-                String nomeMes = mesConta.getMonth().getDisplayName(java.time.format.TextStyle.FULL, PT_BR);
+                String nomeMes = mesConta.getMonth().getDisplayName(TextStyle.FULL, PT_BR);
                 nomeMes = nomeMes.substring(0, 1).toUpperCase() + nomeMes.substring(1);
 
                 Label lblMes = new Label(nomeMes);
                 lblMes.setStyle("-fx-text-fill: #E91E63; -fx-font-weight: bold; -fx-font-size: 13px; -fx-padding: 5 0 2 0;");
-                painel.getChildren().add(lblMes);
+                containerItens.getChildren().add(lblMes);
 
                 mesAnteriorLoop = mesConta;
             }
@@ -548,12 +551,34 @@ public class MainController {
             dados.getChildren().addAll(lblD, lblDt);
             HBox.setHgrow(dados, Priority.ALWAYS);
 
-            Label valor = new Label("R$ " + c.valor());
+            Label valor = new Label(formatarMoeda(c.valor()));
             valor.setStyle("-fx-font-weight: 900; -fx-text-fill: #37474F; -fx-font-size: 13px;");
 
             item.getChildren().addAll(iconBox, dados, valor);
-            painel.getChildren().add(item);
+            containerItens.getChildren().add(item);
         }
+
+        ScrollPane scroll = new ScrollPane(containerItens);
+        scroll.setFitToWidth(true);
+        scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER); // Remove barra horizontal
+        scroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+
+        scroll.setStyle("""
+            -fx-background-color: transparent;
+            -fx-background: transparent;
+            -fx-padding: 0;
+        """);
+
+        scroll.getStylesheets().add("data:text/css," +
+                ".scroll-bar:vertical { -fx-pref-width: 8; -fx-background-color: transparent; } " +
+                ".scroll-bar:vertical .thumb { -fx-background-color: #CFD8DC; -fx-background-radius: 4; } " +
+                ".scroll-bar:vertical .track { -fx-background-color: transparent; } " +
+                ".scroll-pane { -fx-background-color: transparent; }"
+        );
+
+        scroll.setPrefHeight(500);
+
+        painel.getChildren().add(scroll);
 
         return painel;
     }
@@ -579,6 +604,23 @@ public class MainController {
         lblSub.setStyle("-fx-text-fill: " + (diasFimMes == 0 ? "#D32F2F" : "#1976D2") + "; -fx-font-weight: bold; -fx-font-size: 15px;");
 
         return new VBox(5, lblData, lblSub);
+    }
+
+    // --- MÉTO-DO INFALÍVEL DE FORMATAÇÃO ---
+    private String formatarMoeda(BigDecimal valor) {
+        if (valor == null) valor = BigDecimal.ZERO;
+
+        // 1. Cria os símbolos manualmente (Força Bruta)
+        DecimalFormatSymbols simbolos = new DecimalFormatSymbols(Locale.ROOT);
+        simbolos.setDecimalSeparator(',');      // Centavos = Vírgula
+        simbolos.setGroupingSeparator('.');     // Milhar = Ponto
+        simbolos.setMonetaryDecimalSeparator(',');
+
+        // 2. Cria o formatador com esses símbolos fixos
+        // Padrão: R$ espaço #.###,00
+        DecimalFormat formato = new DecimalFormat("R$ #,##0.00", simbolos);
+
+        return formato.format(valor);
     }
 
     // Método auxiliar para mostrar alertas visuais

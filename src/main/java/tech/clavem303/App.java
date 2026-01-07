@@ -9,6 +9,7 @@ import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -58,6 +59,7 @@ public class App extends Application {
     }
 
     public static void main(String[] args) {
+        Locale.setDefault(Locale.of("pt", "BR"));
         launch(args);
     }
 }
